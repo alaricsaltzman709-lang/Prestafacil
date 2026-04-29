@@ -63,7 +63,7 @@ export async function findOrCreateFolder(folderName: string, parentId?: string) 
 
 export async function syncLoansToDrive(loans: any, userId: string, businessName: string) {
   try {
-    const mainFolderId = await findOrCreateFolder('Prestafacil_Data');
+    const mainFolderId = await findOrCreateFolder('RAE_Marketing_Services_Data');
     const userFolderName = `${businessName || 'Usuario'}_${userId.substring(0, 5)}`;
     const userFolderId = await findOrCreateFolder(userFolderName, mainFolderId);
     

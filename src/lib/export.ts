@@ -47,6 +47,6 @@ export async function exportToExcel(loans: Loan[], businessName: string) {
   }
 
   // 3. Save File
-  const fileName = `${businessName || 'Prestafacil'}_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
+  const fileName = `${businessName || 'RAE_Marketing'}_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
   XLSX.writeFile(workbook, fileName);
 }

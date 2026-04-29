@@ -241,8 +241,8 @@ export default function App() {
           className={cn("max-w-md w-full text-center space-y-8 p-8 rounded-3xl border", darkMode ? "bg-[#111111] border-white/5" : "bg-white border-gray-100 shadow-xl")}
         >
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tighter bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
-              Prestafácil DOP
+            <h1 className="text-3xl font-bold tracking-tighter bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+              RAE Marketing Services Prestamos Management APP
             </h1>
             <p className="text-gray-500 shrink-0">Gestión de préstamos en Pesos Dominicanos.</p>
           </div>
@@ -326,7 +326,7 @@ export default function App() {
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
               <HandCoins className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-xl tracking-tight">Prestafácil</span>
+            <span className="font-bold text-lg tracking-tight leading-tight">RAE Marketing Services</span>
           </div>
 
           <div className="flex md:flex-col items-center justify-around md:justify-start gap-1 md:gap-2 flex-grow">
