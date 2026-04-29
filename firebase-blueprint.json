@@ -1,0 +1,67 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "businessName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "Loan": {
+      "title": "Loan",
+      "description": "Loan record details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "borrowerName": { "type": "string" },
+        "amount": { "type": "number" },
+        "interestRate": { "type": "number" },
+        "termMonths": { "type": "integer" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "paid", "defaulted"] },
+        "totalPayable": { "type": "number" },
+        "monthlyInstallment": { "type": "number" },
+        "remainingBalance": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "borrowerName", "amount", "interestRate", "termMonths", "status", "createdAt"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Information about a specific payment installment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "loanId": { "type": "string" },
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "paymentDate": { "type": "string", "format": "date-time" },
+        "installmentNumber": { "type": "integer" },
+        "notes": { "type": "string" }
+      },
+      "required": ["loanId", "userId", "amount", "paymentDate", "installmentNumber"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles"
+    },
+    "/loans/{loanId}": {
+      "schema": "Loan",
+      "description": "Loan records"
+    },
+    "/loans/{loanId}/payments/{paymentId}": {
+      "schema": "Payment",
+      "description": "Payments for a specific loan"
+    }
+  }
+}
