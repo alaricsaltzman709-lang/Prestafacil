@@ -33,7 +33,7 @@ export default function LoanList({ loans, darkMode }: { loans: Loan[], darkMode:
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
           className={cn(
-            "w-full pl-12 pr-4 py-3 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all",
+            "w-full pl-12 pr-4 py-3 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-rae-blue-500 transition-all",
             darkMode ? "bg-[#111111] border-white/5 text-white" : "bg-white border-gray-200"
           )}
         />
@@ -54,8 +54,8 @@ export default function LoanList({ loans, darkMode }: { loans: Loan[], darkMode:
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
-                  <User className="w-6 h-6 text-indigo-500" />
+                <div className="w-12 h-12 rounded-2xl bg-rae-blue-500/10 flex items-center justify-center">
+                  <User className="w-6 h-6 text-rae-blue-500" />
                 </div>
                 <div>
                   <h4 className="font-bold text-lg">{loan.borrowerName}</h4>
@@ -75,12 +75,12 @@ export default function LoanList({ loans, darkMode }: { loans: Loan[], darkMode:
               <div className="flex items-center gap-6">
                 <div className="hidden md:block text-right">
                   <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Pendiente</p>
-                  <p className="font-bold text-indigo-500">{formatCurrency(loan.remainingBalance)}</p>
+                  <p className="font-bold text-rae-blue-500">{formatCurrency(loan.remainingBalance)}</p>
                 </div>
                 
                 <div className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider",
-                  loan.status === 'active' && (darkMode ? "bg-indigo-500/10 text-indigo-500" : "bg-indigo-50 text-indigo-600"),
+                  loan.status === 'active' && (darkMode ? "bg-rae-blue-500/10 text-rae-blue-500" : "bg-rae-blue-50 text-rae-blue-600"),
                   loan.status === 'paid' && (darkMode ? "bg-emerald-500/10 text-emerald-500" : "bg-emerald-50 text-emerald-600"),
                   loan.status === 'defaulted' && (darkMode ? "bg-rose-500/10 text-rose-500" : "bg-rose-50 text-rose-600"),
                 )}>

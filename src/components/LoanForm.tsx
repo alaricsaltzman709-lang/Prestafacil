@@ -115,7 +115,7 @@ export default function LoanForm({ onClose, darkMode, userId }: { onClose: () =>
                       borrowerName: selected ? selected.name : formData.borrowerName
                     });
                   }}
-                  className={cn("flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                  className={cn("flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
                 >
                   <option value="">-- Nuevo Cliente --</option>
                   {customers.map(c => (
@@ -133,7 +133,7 @@ export default function LoanForm({ onClose, darkMode, userId }: { onClose: () =>
                 placeholder="Ej. Juan Pérez"
                 value={formData.borrowerName}
                 onChange={e => setFormData({...formData, borrowerName: e.target.value})}
-                className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
               />
             </div>
             
@@ -145,7 +145,7 @@ export default function LoanForm({ onClose, darkMode, userId }: { onClose: () =>
                 placeholder="0.00"
                 value={formData.amount}
                 onChange={e => setFormData({...formData, amount: e.target.value})}
-                className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
               />
             </div>
 
@@ -156,7 +156,7 @@ export default function LoanForm({ onClose, darkMode, userId }: { onClose: () =>
                 type="number"
                 value={formData.annualRate}
                 onChange={e => setFormData({...formData, annualRate: e.target.value})}
-                className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
               />
             </div>
 
@@ -167,7 +167,7 @@ export default function LoanForm({ onClose, darkMode, userId }: { onClose: () =>
                 type="number"
                 value={formData.termMonths}
                 onChange={e => setFormData({...formData, termMonths: e.target.value})}
-                className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
               />
             </div>
 
@@ -178,26 +178,26 @@ export default function LoanForm({ onClose, darkMode, userId }: { onClose: () =>
                 type="date"
                 value={formData.startDate}
                 onChange={e => setFormData({...formData, startDate: e.target.value})}
-                className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
               />
             </div>
           </div>
 
-          <div className={cn("p-4 rounded-2xl flex items-center gap-4", darkMode ? "bg-indigo-500/10" : "bg-indigo-50")}>
-            <Calculator className="w-10 h-10 text-indigo-500 shrink-0" />
+          <div className={cn("p-4 rounded-2xl flex items-center gap-4", darkMode ? "bg-rae-blue-500/10" : "bg-rae-blue-50")}>
+            <Calculator className="w-10 h-10 text-rae-blue-500 shrink-0" />
             <div className="flex-grow">
-              <p className="text-xs text-indigo-400 font-bold uppercase tracking-wider">Cálculo Estimado</p>
+              <p className="text-xs text-rae-blue-400 font-bold uppercase tracking-wider">Cálculo Estimado</p>
               <div className="flex flex-wrap gap-x-6 gap-y-2 mt-1">
                 <div>
-                  <p className="text-indigo-200 font-bold text-lg">{formatCurrency(installment)}</p>
-                  <p className="text-[10px] text-indigo-400">Cuota Mensual</p>
+                  <p className="text-rae-blue-200 font-bold text-lg">{formatCurrency(installment)}</p>
+                  <p className="text-[10px] text-rae-blue-400">Cuota Mensual</p>
                 </div>
-                <div className="w-px h-8 bg-indigo-500/20 hidden sm:block" />
+                <div className="w-px h-8 bg-rae-blue-500/20 hidden sm:block" />
                 <div>
-                  <p className="text-indigo-200 font-bold text-lg">{formatCurrency(totalPayable)}</p>
-                  <p className="text-[10px] text-indigo-400">Total a Pagar</p>
+                  <p className="text-rae-blue-200 font-bold text-lg">{formatCurrency(totalPayable)}</p>
+                  <p className="text-[10px] text-rae-blue-400">Total a Pagar</p>
                 </div>
-                <div className="w-px h-8 bg-indigo-500/20 hidden sm:block" />
+                <div className="w-px h-8 bg-rae-blue-500/20 hidden sm:block" />
                 <div>
                   <p className="text-emerald-400 font-bold text-lg">
                     {formData.startDate && formData.termMonths ? 
@@ -205,7 +205,7 @@ export default function LoanForm({ onClose, darkMode, userId }: { onClose: () =>
                       : '--/--/----'
                     }
                   </p>
-                  <p className="text-[10px] text-indigo-400">Fecha Finalización</p>
+                  <p className="text-[10px] text-rae-blue-400">Fecha Finalización</p>
                 </div>
               </div>
             </div>
@@ -213,7 +213,7 @@ export default function LoanForm({ onClose, darkMode, userId }: { onClose: () =>
 
           <button
             disabled={loading}
-            className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95 disabled:opacity-50"
+            className="w-full py-4 bg-rae-blue-600 hover:bg-rae-blue-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-rae-blue-900/20 active:scale-95 disabled:opacity-50"
           >
             {loading ? 'Procesando...' : 'Crear Préstamo'}
           </button>

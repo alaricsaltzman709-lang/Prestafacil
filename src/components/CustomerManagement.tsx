@@ -104,7 +104,7 @@ export default function CustomerManagement({ darkMode, userId }: { darkMode: boo
         </div>
         <button 
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-rae-blue-600 hover:bg-rae-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-rae-blue-900/20"
         >
           <UserPlus className="w-5 h-5" />
           <span>Añadir Cliente</span>
@@ -119,7 +119,7 @@ export default function CustomerManagement({ darkMode, userId }: { darkMode: boo
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
           className={cn(
-            "w-full pl-12 pr-4 py-3 rounded-2xl border outline-none focus:ring-2 focus:ring-indigo-500 transition-all",
+            "w-full pl-12 pr-4 py-3 rounded-2xl border outline-none focus:ring-2 focus:ring-rae-blue-500 transition-all",
             darkMode ? "bg-black/20 border-white/10" : "bg-white border-gray-100 shadow-sm"
           )}
         />
@@ -136,11 +136,11 @@ export default function CustomerManagement({ darkMode, userId }: { darkMode: boo
               exit={{ opacity: 0, scale: 0.9 }}
               className={cn(
                 "p-5 rounded-3xl border group relative",
-                darkMode ? "bg-[#111111] border-white/5 hover:border-white/10" : "bg-white border-gray-100 hover:shadow-lg hover:shadow-indigo-500/5"
+                darkMode ? "bg-[#111111] border-white/5 hover:border-white/10" : "bg-white border-gray-100 hover:shadow-lg hover:shadow-rae-blue-500/5"
               )}
             >
               <div className="flex justify-between items-start mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                <div className="w-12 h-12 rounded-2xl bg-rae-blue-500/10 flex items-center justify-center text-rae-blue-500">
                   <Users className="w-6 h-6" />
                 </div>
                 <div className="flex gap-2">
@@ -156,7 +156,7 @@ export default function CustomerManagement({ darkMode, userId }: { darkMode: boo
                       });
                       setShowAddModal(true);
                     }}
-                    className="p-2 hover:bg-indigo-500/10 rounded-lg text-gray-400 hover:text-indigo-500 transition-all"
+                    className="p-2 hover:bg-rae-blue-500/10 rounded-lg text-gray-400 hover:text-rae-blue-500 transition-all"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
@@ -241,7 +241,7 @@ export default function CustomerManagement({ darkMode, userId }: { darkMode: boo
                   type="text"
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
-                  className={cn("w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-indigo-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                  className={cn("w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
                   placeholder="Ej. Juan Pérez"
                 />
               </div>
@@ -253,7 +253,7 @@ export default function CustomerManagement({ darkMode, userId }: { darkMode: boo
                     type="text"
                     value={formData.idNumber}
                     onChange={e => setFormData({...formData, idNumber: e.target.value})}
-                    className={cn("w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-indigo-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                    className={cn("w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
                     placeholder="000-0000000-0"
                   />
                 </div>
@@ -263,7 +263,7 @@ export default function CustomerManagement({ darkMode, userId }: { darkMode: boo
                     type="text"
                     value={formData.phone}
                     onChange={e => setFormData({...formData, phone: e.target.value})}
-                    className={cn("w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-indigo-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                    className={cn("w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
                     placeholder="809-000-0000"
                   />
                 </div>
@@ -275,7 +275,7 @@ export default function CustomerManagement({ darkMode, userId }: { darkMode: boo
                   type="email"
                   value={formData.email}
                   onChange={e => setFormData({...formData, email: e.target.value})}
-                  className={cn("w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-indigo-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                  className={cn("w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
                   placeholder="cliente@email.com"
                 />
               </div>
@@ -286,14 +286,14 @@ export default function CustomerManagement({ darkMode, userId }: { darkMode: boo
                   rows={2}
                   value={formData.address}
                   onChange={e => setFormData({...formData, address: e.target.value})}
-                  className={cn("w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-indigo-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                  className={cn("w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
                   placeholder="Calle..."
                 />
               </div>
 
               <button 
                 disabled={loading}
-                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95 disabled:opacity-50"
+                className="w-full py-4 bg-rae-blue-600 hover:bg-rae-blue-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-rae-blue-900/20 active:scale-95 disabled:opacity-50"
               >
                 {loading ? 'Guardando...' : editingCustomer ? 'Actualizar Cliente' : 'Crear Cliente'}
               </button>

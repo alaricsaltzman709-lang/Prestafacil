@@ -55,6 +55,17 @@ import {
   LayoutList
 } from 'lucide-react';
 
+function RAELogo({ className }: { className?: string }) {
+  return (
+    <div className={cn("relative flex items-center justify-center rounded-full bg-rae-blue-900 text-white font-bold italic", className)}>
+      <div className="flex flex-col items-center leading-none">
+        <span className="text-xl tracking-tighter -mb-1">RAE</span>
+        <span className="text-[7px] not-italic font-medium opacity-90">Marketing Services</span>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -66,6 +77,8 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'idle'>('idle');
   const [isExporting, setIsExporting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleExport = async () => {
     if (loans.length === 0) return;
@@ -82,43 +95,7 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
-      
-      if (u) {
-        // Sync user profile safely
-        const userDocRef = doc(db, 'users', u.uid);
-        onSnapshot(userDocRef, (snap) => {
-          if (snap.exists()) {
-            setProfile(snap.data() as UserProfile);
-          }
-        });
-
-        getDoc(userDocRef).then((snap) => {
-          if (!snap.exists()) {
-            setDoc(userDocRef, {
-              uid: u.uid,
-              email: u.email,
-              displayName: u.displayName || '',
-              photoURL: u.photoURL || '',
-              bankBalance: 0,
-              createdAt: serverTimestamp()
-            }).catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${u.uid}`));
-          } else {
-            const existingData = snap.data();
-            // Only update mutable fields, but ensure required fields exist for rules
-            setDoc(userDocRef, {
-              uid: u.uid,
-              email: u.email,
-              displayName: u.displayName || (existingData.displayName || ''),
-              photoURL: u.photoURL || (existingData.photoURL || ''),
-              bankBalance: existingData.bankBalance !== undefined ? existingData.bankBalance : 0,
-            }, { merge: true }).catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${u.uid}`));
-          }
-          setLoading(false);
-        }).catch(e => {
-          handleFirestoreError(e, OperationType.GET, `users/${u.uid}`);
-          setLoading(false);
-        });
-      } else {
+      if (!u) {
         setProfile(null);
         setLoading(false);
         localStorage.removeItem('google_access_token');
@@ -126,6 +103,55 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const userDocRef = doc(db, 'users', user.uid);
+    
+    // Sync profile data
+    const unsubscribeProfile = onSnapshot(userDocRef, (snap) => {
+      if (snap.exists()) {
+        setProfile(snap.data() as UserProfile);
+      }
+    }, (err) => {
+      console.error("Profile sync error:", err);
+    });
+
+    // Initialize/Update profile
+    getDoc(userDocRef).then(async (snap) => {
+      try {
+        if (!snap.exists()) {
+          await setDoc(userDocRef, {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || '',
+            photoURL: user.photoURL || '',
+            bankBalance: 0,
+            createdAt: serverTimestamp()
+          });
+        } else {
+          const existingData = snap.data();
+          await setDoc(userDocRef, {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || (existingData.displayName || ''),
+            photoURL: user.photoURL || (existingData.photoURL || ''),
+            bankBalance: existingData.bankBalance !== undefined ? existingData.bankBalance : 0,
+          }, { merge: true });
+        }
+      } catch (e) {
+        console.error("Error updating user profile:", e);
+      } finally {
+        setLoading(false);
+      }
+    }).catch(e => {
+      console.error("Error fetching user profile:", e);
+      setLoading(false);
+    });
+
+    return () => unsubscribeProfile();
+  }, [user]);
 
   useEffect(() => {
     if (!user || loans.length === 0) return;
@@ -178,13 +204,25 @@ export default function App() {
 
   const handleLogin = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    const provider = new GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/drive.file');
+    setAuthError(null);
+    setIsLoggingIn(true);
+    console.log("Attempting login...", e ? "Email/Password" : "Google");
+
     try {
-      if (e && email && password) {
+      if (e) {
+        // Handle Email/Password Login or Register
+        if (!email || !password) {
+          throw new Error("Email y contraseña son requeridos");
+        }
+        if (isRegistering && !businessName) {
+          throw new Error("Nombre del negocio es requerido");
+        }
+
         if (isRegistering) {
+          console.log("Registering user:", email);
           const result = await createUserWithEmailAndPassword(auth, email, password);
-          if (result.user && businessName) {
+          console.log("User registered successfully:", result.user.uid);
+          if (result.user) {
             await setDoc(doc(db, 'users', result.user.uid), {
               uid: result.user.uid,
               email: result.user.email,
@@ -195,38 +233,79 @@ export default function App() {
             }, { merge: true });
           }
         } else {
+          console.log("Signing in user:", email);
           await signInWithEmailAndPassword(auth, email, password);
+          console.log("User signed in successfully");
         }
       } else {
-        const result = await signInWithPopup(auth, provider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        if (credential?.accessToken) {
-          localStorage.setItem('google_access_token', credential.accessToken);
-        }
-        // Initialize profile if it doesn't exist
-        const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-        if (!userDoc.exists()) {
-          await setDoc(doc(db, 'users', result.user.uid), {
-            uid: result.user.uid,
-            email: result.user.email,
-            displayName: result.user.displayName || '',
-            bankBalance: 0,
-            createdAt: serverTimestamp()
-          }, { merge: true });
+        // Handle Google Login
+        console.log("Auth State: Initiating Google Popup...");
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+        
+        try {
+          const result = await signInWithPopup(auth, provider);
+          console.log("Google Login SUCCESS:", result.user.email);
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          if (credential?.accessToken) {
+            localStorage.setItem('google_access_token', credential.accessToken);
+          }
+          
+          // Initialize profile if it doesn't exist
+          const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+          if (!userDoc.exists()) {
+            await setDoc(doc(db, 'users', result.user.uid), {
+              uid: result.user.uid,
+              email: result.user.email,
+              displayName: result.user.displayName || '',
+              bankBalance: 0,
+              createdAt: serverTimestamp()
+            }, { merge: true });
+          }
+        } catch (popupError: any) {
+          console.error("Popup Error:", popupError);
+          if (popupError.code === 'auth/popup-blocked') {
+             throw new Error("VENTANA BLOQUEADA: El navegador bloqueó el inicio de sesión. Por favor activa las ventanas emergentes en la barra de direcciones o abre la app en una pestaña nueva.");
+          }
+          throw popupError;
         }
       }
-    } catch (error) {
-      console.error("Login Error:", error);
+    } catch (error: any) {
+      console.error("Login Error Details:", error);
+      let message = "Hubo un error al iniciar sesión.";
+      
+      if (error.code === 'auth/popup-blocked') {
+        message = "El navegador bloqueó la ventana emergente. Por favor permite las ventanas emergentes o abre la app en una pestaña nueva.";
+      } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        message = "Credenciales incorrectas. Verifica tu email y contraseña.";
+      } else if (error.code === 'auth/email-already-in-use') {
+        message = "Este correo electrónico ya está registrado. Intenta iniciar sesión.";
+      } else if (error.code === 'auth/weak-password') {
+        message = "La contraseña debe tener al menos 6 caracteres.";
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        message = "La ventana de inicio de sesión se cerró antes de completar el proceso.";
+      } else if (error.message) {
+        message = error.message;
+      }
+      
+      // Add iframe context check
+      if (window.self !== window.top && error.code?.includes('popup')) {
+        message += " Tip: Si el problema persiste, intenta abrir la aplicación en una pestaña nueva para evitar restricciones del navegador.";
+      }
+      
+      setAuthError(message);
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-[#111827] flex items-center justify-center">
         <motion.div 
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full"
+          className="w-12 h-12 border-4 border-rae-blue-600 border-t-transparent rounded-full"
         />
       </div>
     );
@@ -234,20 +313,33 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className={cn("min-h-screen flex flex-col items-center justify-center p-4", darkMode ? "bg-[#0a0a0a] text-white" : "bg-gray-50 text-gray-900")}>
+      <div className={cn("min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden", darkMode ? "bg-[#0f172a] text-white" : "bg-gray-50 text-gray-900")}>
+        {/* Background Grid & Ornamentation */}
+        <div className="absolute inset-0 z-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#2d428d 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-rae-blue-500/20 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-rae-blue-600/10 rounded-full blur-[120px]"></div>
+
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={cn("max-w-md w-full text-center space-y-8 p-8 rounded-3xl border", darkMode ? "bg-[#111111] border-white/5" : "bg-white border-gray-100 shadow-xl")}
+          className={cn("max-w-md w-full relative z-10 text-center space-y-8 p-10 rounded-3xl border shadow-2xl", darkMode ? "bg-[#111111]/80 border-white/5 backdrop-blur-xl" : "bg-white border-gray-100")}
         >
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tighter bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
-              RAE Marketing Services Prestamos Management APP
-            </h1>
-            <p className="text-gray-500 shrink-0">Gestión de préstamos en Pesos Dominicanos.</p>
+          <div className="flex flex-col items-center space-y-4">
+            <RAELogo className="w-20 h-20 shadow-xl" />
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold tracking-tight text-white">
+                RAE Marketing Services
+              </h1>
+              <p className="text-gray-400 text-sm">Préstamos Management APP</p>
+            </div>
           </div>
           
           <form onSubmit={handleLogin} className="space-y-4 text-left">
+            {authError && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+                {authError}
+              </div>
+            )}
             {isRegistering && (
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase text-gray-500 ml-1">Nombre del Negocio</label>
@@ -256,7 +348,7 @@ export default function App() {
                   required
                   value={businessName}
                   onChange={e => setBusinessName(e.target.value)}
-                  className={cn("w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-indigo-500 outline-none transition-all", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                  className={cn("w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-rae-blue-500 outline-none transition-all", darkMode ? "bg-black/40 border-white/10 text-white" : "bg-gray-50 border-gray-200")}
                   placeholder="Ej. Inversiones Pérez"
                 />
               </div>
@@ -267,7 +359,7 @@ export default function App() {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className={cn("w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-indigo-500 outline-none transition-all", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                className={cn("w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-rae-blue-500 outline-none transition-all", darkMode ? "bg-black/40 border-white/10 text-white" : "bg-gray-50 border-gray-200")}
                 placeholder="tu@email.com"
               />
             </div>
@@ -277,15 +369,16 @@ export default function App() {
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className={cn("w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-indigo-500 outline-none transition-all", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                className={cn("w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-rae-blue-500 outline-none transition-all", darkMode ? "bg-black/40 border-white/10 text-white" : "bg-gray-50 border-gray-200")}
                 placeholder="••••••••"
               />
             </div>
             <button
               type="submit"
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
+              disabled={isLoggingIn}
+              className="w-full py-4 bg-[#2d428d] hover:bg-[#3b52b3] text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/40 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isRegistering ? 'Crear Cuenta' : 'Iniciar Sesión'}
+              {isLoggingIn ? 'Cargando...' : (isRegistering ? 'Crear Cuenta' : 'Iniciar Sesión')}
             </button>
           </form>
 
@@ -300,15 +393,16 @@ export default function App() {
 
           <button
             onClick={() => handleLogin()}
-            className={cn("w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-medium transition-all shadow-sm border", darkMode ? "bg-white/5 border-white/10 hover:bg-white/10 text-white" : "bg-white border-gray-200 hover:bg-gray-50 text-gray-900")}
+            disabled={isLoggingIn}
+            className={cn("w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-medium transition-all shadow-sm border disabled:opacity-50", darkMode ? "bg-white/5 border-white/10 hover:bg-white/10 text-white" : "bg-white border-gray-200 hover:bg-gray-50 text-gray-900")}
           >
-            <LogIn className="w-5 h-5 text-indigo-500" />
-            Acceder con Google
+            <LogIn className="w-5 h-5 text-rae-blue-500" />
+            {isLoggingIn ? 'Cargando...' : 'Acceder con Google'}
           </button>
 
           <button 
             onClick={() => setIsRegistering(!isRegistering)}
-            className="text-sm text-indigo-500 hover:underline"
+            className="text-sm text-rae-blue-400 hover:underline"
           >
             {isRegistering ? '¿Ya tienes cuenta? Ingresa aquí' : '¿No tienes cuenta? Registrate'}
           </button>
@@ -318,14 +412,12 @@ export default function App() {
   }
 
   return (
-    <div className={cn("min-h-screen transition-colors duration-300", darkMode ? "bg-[#0a0a0a] text-white" : "bg-gray-50 text-gray-900")}>
+    <div className={cn("min-h-screen transition-colors duration-300", darkMode ? "bg-[#0a0f1d] text-white" : "bg-gray-50 text-gray-900")}>
       {/* Sidebar / Nav */}
       <nav className={cn("fixed bottom-0 left-0 right-0 md:top-0 md:bottom-0 md:left-0 md:w-64 border-t md:border-t-0 md:border-r z-50", darkMode ? "bg-black/50 border-white/10 backdrop-blur-xl" : "bg-white/80 border-gray-200 backdrop-blur-xl")}>
         <div className="h-full flex flex-col p-4">
           <div className="hidden md:flex items-center gap-3 mb-10 px-2 mt-4">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <HandCoins className="w-5 h-5 text-white" />
-            </div>
+            <RAELogo className="w-10 h-10 shadow-lg" />
             <span className="font-bold text-lg tracking-tight leading-tight">RAE Marketing Services</span>
           </div>
 
@@ -364,7 +456,7 @@ export default function App() {
             <button 
               onClick={handleExport}
               disabled={isExporting || loans.length === 0}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/10 transition-colors text-indigo-400 hover:text-indigo-500 disabled:opacity-30 disabled:grayscale"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rae-blue-500/10 transition-colors text-rae-blue-400 hover:text-rae-blue-500 disabled:opacity-30 disabled:grayscale"
             >
               <Download className={cn("w-5 h-5", isExporting && "animate-bounce")} />
               <span>{isExporting ? 'Exportando...' : 'Exportar Data (XLS)'}</span>
@@ -424,7 +516,7 @@ export default function App() {
           </div>
           <button 
             onClick={() => setShowLoanForm(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/20"
+            className="flex items-center gap-2 px-5 py-2.5 bg-rae-blue-600 hover:bg-rae-blue-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-rae-blue-900/20"
           >
             <Plus className="w-5 h-5" />
             Nuevo Préstamo
@@ -446,7 +538,7 @@ export default function App() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xl font-bold">Resumen de Mora</h3>
-                    <button onClick={() => setActiveTab('reports')} className="text-sm font-bold text-indigo-500 hover:underline">Ver todo</button>
+                    <button onClick={() => setActiveTab('reports')} className="text-sm font-bold text-rae-blue-500 hover:underline">Ver todo</button>
                   </div>
                   <div className={cn("p-6 rounded-3xl border", darkMode ? "bg-[#111111] border-white/5" : "bg-white border-gray-100")}>
                     {loans.filter(l => l.status === 'defaulted').length === 0 ? (
@@ -530,7 +622,7 @@ function NavItem({ active, onClick, icon, label, darkMode }: { active: boolean, 
       className={cn(
         "flex flex-col md:flex-row items-center gap-1 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-xl transition-all w-full",
         active 
-          ? (darkMode ? "bg-indigo-600/10 text-indigo-500" : "bg-indigo-50 text-indigo-600")
+          ? (darkMode ? "bg-rae-blue-600/10 text-rae-blue-500" : "bg-rae-blue-50 text-rae-blue-600")
           : (darkMode ? "text-gray-500 hover:text-white" : "text-gray-500 hover:text-black")
       )}
     >

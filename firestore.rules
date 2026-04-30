@@ -6,6 +6,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /_connection_test_/{docId} {
+      allow read: if true;
+    }
+
     // Helper functions
     function isSignedIn() { return request.auth != null; }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
@@ -28,26 +32,36 @@ service cloud.firestore {
     function isValidCustomer(data) {
       return data.keys().hasAll(['userId', 'name', 'createdAt'])
         && data.userId == request.auth.uid
-        && data.name is string && data.name.size() <= 100
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && (!('idNumber' in data) || (data.idNumber is string && data.idNumber.size() <= 50))
+        && (!('phone' in data) || (data.phone is string && data.phone.size() <= 30))
+        && (!('email' in data) || (data.email is string && data.email.size() <= 100))
+        && (!('address' in data) || (data.address is string && data.address.size() <= 500))
         && data.createdAt is timestamp;
     }
 
     function isValidLoan(data) {
-      return data.userId == request.auth.uid
-        && data.borrowerName is string && data.borrowerName.size() <= 100
+      return data.keys().hasAll(['userId', 'borrowerName', 'amount', 'interestRate', 'termMonths', 'status', 'createdAt'])
+        && data.userId == request.auth.uid
+        && data.borrowerName is string && data.borrowerName.size() > 0 && data.borrowerName.size() <= 100
         && data.amount is number && data.amount > 0
         && data.interestRate is number && data.interestRate >= 0
         && data.termMonths is number && data.termMonths > 0
         && data.status in ['active', 'paid', 'defaulted']
+        && (!('monthlyInstallment' in data) || data.monthlyInstallment is number)
+        && (!('totalPayable' in data) || data.totalPayable is number)
+        && (!('remainingBalance' in data) || data.remainingBalance is number)
         && data.createdAt is timestamp;
     }
 
     function isValidPayment(data, loanId) {
-      return data.userId == request.auth.uid
+      return data.keys().hasAll(['userId', 'loanId', 'amount', 'paymentDate', 'installmentNumber', 'createdAt'])
+        && data.userId == request.auth.uid
         && data.loanId == loanId
         && data.amount is number && data.amount > 0
         && data.paymentDate is timestamp
-        && data.installmentNumber is number;
+        && data.installmentNumber is number
+        && data.createdAt is timestamp;
     }
 
     // Collection matches

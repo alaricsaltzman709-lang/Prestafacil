@@ -41,7 +41,7 @@ export default function KPICards({ stats, darkMode, userId }: { stats: Dashboard
       title: 'Capital Prestado',
       value: formatCurrency(stats.totalLent),
       icon: <HandCoins className="w-6 h-6" />,
-      color: 'indigo',
+      color: 'rae-blue',
       trend: '+12%',
       isUp: true
     },
@@ -65,7 +65,7 @@ export default function KPICards({ stats, darkMode, userId }: { stats: Dashboard
       title: 'Balance Bancario',
       value: formatCurrency(stats.bankBalance),
       icon: <Landmark className="w-6 h-6" />,
-      color: 'purple',
+      color: 'rae-blue',
       trend: '0%',
       isUp: true,
       editable: true
@@ -93,7 +93,7 @@ export default function KPICards({ stats, darkMode, userId }: { stats: Dashboard
                 setNewBalance(stats.bankBalance.toString());
                 setIsEditingBalance(true);
               }}
-              className="absolute top-4 right-4 p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/5 rounded-lg text-gray-400 hover:text-indigo-500"
+              className="absolute top-4 right-4 p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/5 rounded-lg text-gray-400 hover:text-rae-blue-500"
             >
               <Pencil className="w-4 h-4" />
             </button>
@@ -102,10 +102,9 @@ export default function KPICards({ stats, darkMode, userId }: { stats: Dashboard
           <div className="flex items-center justify-between mb-4">
             <div className={cn(
               "w-12 h-12 rounded-2xl flex items-center justify-center",
-              card.color === 'indigo' && "bg-indigo-500/10 text-indigo-500",
+              card.color === 'rae-blue' && "bg-rae-blue-500/10 text-rae-blue-500",
               card.color === 'amber' && "bg-amber-500/10 text-amber-500",
               card.color === 'emerald' && "bg-emerald-500/10 text-emerald-500",
-              card.color === 'purple' && "bg-purple-500/10 text-purple-500",
             )}>
               {card.icon}
             </div>
@@ -129,7 +128,7 @@ export default function KPICards({ stats, darkMode, userId }: { stats: Dashboard
                 value={newBalance}
                 onChange={e => setNewBalance(e.target.value)}
                 className={cn(
-                  "w-full px-3 py-1 rounded-lg border outline-none focus:ring-2 focus:ring-indigo-500 text-lg font-bold font-mono",
+                  "w-full px-3 py-1 rounded-lg border outline-none focus:ring-2 focus:ring-rae-blue-500 text-lg font-bold font-mono",
                   darkMode ? "bg-black/40 border-white/10" : "bg-gray-50 border-gray-200"
                 )}
               />

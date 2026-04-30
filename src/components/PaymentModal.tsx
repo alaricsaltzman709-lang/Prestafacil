@@ -48,7 +48,7 @@ export default function PaymentModal({ loan, onClose, darkMode }: { loan: Loan, 
         loanId: loan.id,
         userId: loan.userId,
         amount: paymentAmount,
-        paymentDate: new Date().toISOString(),
+        paymentDate: serverTimestamp(),
         installmentNumber: payments.length + 1,
         createdAt: serverTimestamp()
       });
@@ -109,9 +109,9 @@ export default function PaymentModal({ loan, onClose, darkMode }: { loan: Loan, 
           </div>
 
           <div className="space-y-6 flex-grow">
-            <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20">
-              <p className="text-xs text-indigo-400 font-bold uppercase tracking-widest mb-1">Balance Pendiente</p>
-              <h4 className="text-3xl font-bold text-indigo-500">{formatCurrency(loan.remainingBalance)}</h4>
+            <div className="p-4 rounded-2xl bg-rae-blue-500/10 border border-rae-blue-500/20">
+              <p className="text-xs text-rae-blue-400 font-bold uppercase tracking-widest mb-1">Balance Pendiente</p>
+              <h4 className="text-3xl font-bold text-rae-blue-500">{formatCurrency(loan.remainingBalance)}</h4>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -132,12 +132,12 @@ export default function PaymentModal({ loan, onClose, darkMode }: { loan: Loan, 
                   type="number"
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
-                  className={cn("flex-grow px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500", darkMode ? "bg-black/20" : "bg-gray-100")}
+                  className={cn("flex-grow px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20" : "bg-gray-100")}
                 />
                 <button 
                   onClick={handleAddPayment}
                   disabled={loading || !amount || loan.remainingBalance === 0}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-xl disabled:opacity-50"
+                  className="px-4 py-2 bg-rae-blue-600 hover:bg-rae-blue-700 rounded-xl disabled:opacity-50 text-white"
                 >
                   <ArrowDownCircle className="w-5 h-5" />
                 </button>

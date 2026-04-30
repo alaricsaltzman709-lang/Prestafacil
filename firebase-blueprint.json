@@ -48,12 +48,31 @@
         "notes": { "type": "string" }
       },
       "required": ["loanId", "userId", "amount", "paymentDate", "installmentNumber"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Borrower contact information",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "idNumber": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "createdAt"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "User profiles"
+    },
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Customer profiles"
     },
     "/loans/{loanId}": {
       "schema": "Loan",

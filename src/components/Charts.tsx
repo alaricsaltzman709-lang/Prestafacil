@@ -32,7 +32,7 @@ export default function Charts({ loans, darkMode }: { loans: Loan[], darkMode: b
     }, {});
 
     return [
-      { name: 'Activos', value: statusCount.active || 0, color: '#6366f1' },
+      { name: 'Activos', value: statusCount.active || 0, color: '#1a237e' },
       { name: 'Pagados', value: statusCount.paid || 0, color: '#10b981' },
       { name: 'En Mora', value: statusCount.defaulted || 0, color: '#f59e0b' }
     ].filter(d => d.value > 0);
@@ -72,7 +72,7 @@ export default function Charts({ loans, darkMode }: { loans: Loan[], darkMode: b
               />
               <Bar 
                 dataKey="amount" 
-                fill="#6366f1" 
+                fill="#1a237e" 
                 radius={[6, 6, 0, 0]} 
                 barSize={32}
               />
