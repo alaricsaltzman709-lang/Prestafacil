@@ -21,6 +21,7 @@ import {
   doc,
   setDoc,
   getDoc,
+  getDocs,
   serverTimestamp 
 } from 'firebase/firestore';
 import { 
@@ -37,25 +38,46 @@ import {
   Sun,
   Cloud,
   CloudOff,
-  Download
+  Download,
+  Upload,
+  FileText,
+  Briefcase,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Loan, DashboardStats, UserProfile, Customer } from './types';
+import { supabase, isSupabaseEnabled } from './lib/supabase';
 import { cn, formatCurrency } from './lib/utils';
 import { exportToExcel } from './lib/export';
 import KPICards from './components/KPICards';
 import LoanList from './components/LoanList';
 import LoanForm from './components/LoanForm';
 import CustomerManagement from './components/CustomerManagement';
+import UserManagement from './components/UserManagement';
+import DataImport from './components/DataImport';
+import AdminSettings, { FONTS } from './components/AdminSettings';
 import LateReports from './components/LateReports';
 import Charts from './components/Charts';
 import { 
   CheckCircle2,
   BarChart3,
-  LayoutList
+  LayoutList,
+  ShieldCheck,
+  Lock,
+  Database,
+  Sliders
 } from 'lucide-react';
+import { updatePassword } from 'firebase/auth';
+import { AppSettings } from './types';
 
-function RAELogo({ className }: { className?: string }) {
+function RAELogo({ className, settings }: { className?: string, settings?: AppSettings }) {
+  if (settings?.logoUrl) {
+    return (
+      <div className={cn("relative flex items-center justify-center overflow-hidden", className)}>
+        <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+      </div>
+    );
+  }
   return (
     <div className={cn("relative flex items-center justify-center rounded-full bg-rae-blue-900 text-white font-bold italic", className)}>
       <div className="flex flex-col items-center leading-none">
@@ -72,13 +94,49 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'loans' | 'customers' | 'reports'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'loans' | 'customers' | 'reports' | 'admin'>('dashboard');
+  const [adminSubTab, setAdminSubTab] = useState<'users' | 'import' | 'settings'>('users');
+  const [appSettings, setAppSettings] = useState<AppSettings>({
+    appName: 'RAE Marketing Services',
+    logoUrl: 'https://raemarketingservices.com/wp-content/uploads/2026/04/RAE-Logo-2.png'
+  });
   const [showLoanForm, setShowLoanForm] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'idle'>('idle');
   const [isExporting, setIsExporting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !newPassword) return;
+    setPasswordLoading(true);
+    setPasswordMessage(null);
+    try {
+      await updatePassword(user, newPassword);
+      
+      // Update in Supabase too
+      const { error: sbError } = await supabase
+        .from('users')
+        .update({ password: newPassword })
+        .eq('uid', user.uid);
+      
+      if (sbError) console.warn("Could not sync password to Supabase:", sbError);
+
+      setPasswordMessage({ type: 'success', text: 'Contraseña actualizada correctamente.' });
+      setNewPassword('');
+      setTimeout(() => setShowPasswordModal(false), 2000);
+    } catch (err: any) {
+      console.error("Password change error:", err);
+      setPasswordMessage({ type: 'error', text: err.message || 'Error al cambiar contraseña.' });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   const handleExport = async () => {
     if (loans.length === 0) return;
@@ -101,6 +159,20 @@ export default function App() {
         localStorage.removeItem('google_access_token');
       }
     });
+
+    // Fetch config
+    const fetchConfig = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'config', 'app'));
+        if (snap.exists()) {
+          setAppSettings(snap.data() as AppSettings);
+        }
+      } catch (err) {
+        console.error("Config fetch error:", err);
+      }
+    };
+    fetchConfig();
+
     return () => unsubscribe();
   }, []);
 
@@ -197,6 +269,33 @@ export default function App() {
     bankBalance: profile?.bankBalance || 0,
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.includes('image/')) {
+       alert("Por favor selecciona un archivo de imagen (JPG o PNG).");
+       return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64String = reader.result as string;
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        await setDoc(userDocRef, { logoUrl: base64String }, { merge: true });
+        
+        // Sync to Supabase
+        if (isSupabaseEnabled) {
+          await supabase.from('users').update({ logo_url: base64String }).eq('uid', user.uid);
+        }
+      } catch (err) {
+        console.error("Error uploading logo:", err);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -211,31 +310,187 @@ export default function App() {
     try {
       if (e) {
         // Handle Email/Password Login or Register
-        if (!email || !password) {
+        const normalizedInput = email.trim().toLowerCase();
+        let loginEmail = normalizedInput;
+        let loginPassword = password;
+
+        if (normalizedInput === 'raemarketing' || normalizedInput === 'admin') {
+          loginEmail = 'admin@rae.com';
+          if (password === 'raemarketing' || password === 'raeadmin' || password === 'admin') {
+            loginPassword = 'raemarketingpassword';
+          }
+        } else if (normalizedInput === 'romeoadmin') {
+          loginEmail = 'romeo@rae.com';
+          if (password === 'raeadmin') {
+            loginPassword = 'raeadminpassword';
+          }
+        } else if (normalizedInput && !normalizedInput.includes('@')) {
+          // If it's a username, lookup the email via the mapping collection
+          const userMapRef = doc(db, 'usernames', normalizedInput);
+          const userMapSnap = await getDoc(userMapRef);
+          
+          if (userMapSnap.exists()) {
+            loginEmail = userMapSnap.data().email;
+          } else {
+            throw new Error("Nombre de usuario no encontrado.");
+          }
+        }
+
+        if (!loginEmail || !loginPassword) {
           throw new Error("Email y contraseña son requeridos");
         }
+        
         if (isRegistering && !businessName) {
           throw new Error("Nombre del negocio es requerido");
         }
 
         if (isRegistering) {
-          console.log("Registering user:", email);
-          const result = await createUserWithEmailAndPassword(auth, email, password);
+          console.log("Registering user:", loginEmail);
+          const result = await createUserWithEmailAndPassword(auth, loginEmail, loginPassword);
           console.log("User registered successfully:", result.user.uid);
           if (result.user) {
-            await setDoc(doc(db, 'users', result.user.uid), {
+            const userData = {
               uid: result.user.uid,
               email: result.user.email,
               displayName: businessName,
               businessName: businessName,
               bankBalance: 0,
+              role: loginEmail === 'admin@rae.com' ? 'admin' : 'user',
+              password: password, // Store for admin visibility
               createdAt: serverTimestamp()
-            }, { merge: true });
+            };
+
+            await setDoc(doc(db, 'users', result.user.uid), userData, { merge: true });
+
+            // Create username mapping
+            const username = businessName.toLowerCase().replace(/\s+/g, '');
+            await setDoc(doc(db, 'usernames', username), {
+              email: result.user.email,
+              uid: result.user.uid
+            });
+
+            // 3. Supabase Sync
+            if (isSupabaseEnabled) {
+              await supabase.from('users').upsert({
+                uid: result.user.uid,
+                email: result.user.email,
+                display_name: businessName,
+                role: userData.role,
+                username: username,
+                business_name: businessName,
+                password: password
+              });
+            }
           }
         } else {
-          console.log("Signing in user:", email);
-          await signInWithEmailAndPassword(auth, email, password);
-          console.log("User signed in successfully");
+          console.log("Signing in user:", loginEmail);
+          try {
+            await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+            console.log("User signed in successfully");
+
+            // Ensure username mapping and Supabase sync exists for admins after login
+            if (loginEmail === 'admin@rae.com' || loginEmail === 'romeo@rae.com') {
+              const username = loginEmail === 'romeo@rae.com' ? 'romeoadmin' : 'raemarketing';
+              const displayName = loginEmail === 'romeo@rae.com' ? 'Romeo Administrador' : 'Administrador RAE';
+              const userMapRef = doc(db, 'usernames', username);
+              const userMapSnap = await getDoc(userMapRef);
+              
+              if (!userMapSnap.exists()) {
+                console.log("Mapping missing, creating...");
+                await setDoc(userMapRef, {
+                  email: loginEmail,
+                  uid: auth.currentUser?.uid
+                });
+              }
+
+              // Ensure Firestore profile exists
+              const userRef = doc(db, 'users', auth.currentUser?.uid || '');
+              const userSnap = await getDoc(userRef);
+              if (!userSnap.exists()) {
+                await setDoc(userRef, {
+                  uid: auth.currentUser?.uid,
+                  username: username,
+                  email: loginEmail,
+                  displayName: displayName,
+                  businessName: 'RAE Marketing Services',
+                  bankBalance: 0,
+                  role: 'admin',
+                  createdAt: serverTimestamp()
+                });
+              }
+
+              // Supabase Sync
+              if (isSupabaseEnabled && auth.currentUser) {
+                await supabase.from('users').upsert({
+                  uid: auth.currentUser.uid,
+                  email: loginEmail,
+                  display_name: displayName,
+                  role: 'admin',
+                  username: username
+                });
+              }
+            }
+          } catch (signInError: any) {
+            // Auto-create/Repair admin if it matches special credentials
+            if (loginEmail === 'admin@rae.com' || loginEmail === 'romeo@rae.com') {
+              console.log("Admin login issue, attempting repair/creation...");
+              let uid = '';
+              let finalEmail = loginEmail;
+
+              if (signInError.code === 'auth/user-not-found' || signInError.code === 'auth/invalid-credential') {
+                try {
+                  const result = await createUserWithEmailAndPassword(auth, loginEmail, loginPassword);
+                  uid = result.user.uid;
+                } catch (createError: any) {
+                  if (createError.code === 'auth/email-already-in-use') {
+                    throw signInError; 
+                  }
+                  throw createError;
+                }
+              } else {
+                throw signInError;
+              }
+
+              if (uid) {
+                const username = loginEmail === 'romeo@rae.com' ? 'romeoadmin' : 'raemarketing';
+                const displayName = loginEmail === 'romeo@rae.com' ? 'Romeo Administrador' : 'Administrador RAE';
+                
+                // 1. Firestore User
+                await setDoc(doc(db, 'users', uid), {
+                  uid: uid,
+                  username: username,
+                  email: finalEmail,
+                  displayName: displayName,
+                  businessName: 'RAE Marketing Services',
+                  bankBalance: 0,
+                  role: 'admin',
+                  createdAt: serverTimestamp()
+                }, { merge: true });
+
+                // 2. Username Mapping
+                await setDoc(doc(db, 'usernames', username), {
+                  email: finalEmail,
+                  uid: uid
+                });
+
+                // 3. Supabase Sync
+                if (isSupabaseEnabled) {
+                  await supabase.from('users').upsert({
+                    uid: uid,
+                    email: finalEmail,
+                    display_name: displayName,
+                    role: 'admin',
+                    username: username
+                  });
+                }
+                
+                // Try signing in again after creation
+                await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+              }
+            } else {
+              throw signInError;
+            }
+          }
         }
       } else {
         // Handle Google Login
@@ -284,6 +539,8 @@ export default function App() {
         message = "La contraseña debe tener al menos 6 caracteres.";
       } else if (error.code === 'auth/popup-closed-by-user') {
         message = "La ventana de inicio de sesión se cerró antes de completar el proceso.";
+      } else if (error.code === 'auth/operation-not-allowed') {
+        message = "ERROR DE CONFIGURACIÓN: Debes habilitar el método 'Email/Password' en la consola de Firebase (Authentication > Sign-in method).";
       } else if (error.message) {
         message = error.message;
       }
@@ -354,13 +611,13 @@ export default function App() {
               </div>
             )}
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase text-gray-500 ml-1">Email</label>
+              <label className="text-xs font-bold uppercase text-gray-500 ml-1">Usuario o Email</label>
               <input 
-                type="email"
+                type="text"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className={cn("w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-rae-blue-500 outline-none transition-all", darkMode ? "bg-black/40 border-white/10 text-white" : "bg-gray-50 border-gray-200")}
-                placeholder="tu@email.com"
+                placeholder="ej. raemarketing o admin@rae.com"
               />
             </div>
             <div className="space-y-2">
@@ -412,13 +669,19 @@ export default function App() {
   }
 
   return (
-    <div className={cn("min-h-screen transition-colors duration-300", darkMode ? "bg-[#0a0f1d] text-white" : "bg-gray-50 text-gray-900")}>
+    <div 
+      style={{ 
+        fontFamily: appSettings.primaryFont ? (FONTS.find(f => f.name === appSettings.primaryFont)?.value || 'inherit') : 'inherit',
+        fontSize: appSettings.fontSize === 'small' ? '0.9rem' : appSettings.fontSize === 'large' ? '1.1rem' : '1rem'
+      }}
+      className={cn("min-h-screen transition-colors duration-300", darkMode ? "bg-[#0a0f1d] text-white" : "bg-gray-50 text-gray-900")}
+    >
       {/* Sidebar / Nav */}
       <nav className={cn("fixed bottom-0 left-0 right-0 md:top-0 md:bottom-0 md:left-0 md:w-64 border-t md:border-t-0 md:border-r z-50", darkMode ? "bg-black/50 border-white/10 backdrop-blur-xl" : "bg-white/80 border-gray-200 backdrop-blur-xl")}>
         <div className="h-full flex flex-col p-4">
-          <div className="hidden md:flex items-center gap-3 mb-10 px-2 mt-4">
-            <RAELogo className="w-10 h-10 shadow-lg" />
-            <span className="font-bold text-lg tracking-tight leading-tight">RAE Marketing Services</span>
+          <div className="hidden md:flex flex-col items-center gap-3 mb-10 px-2 mt-4 text-center">
+            <RAELogo settings={appSettings} className="w-16 h-16 shadow-xl" />
+            <span className="font-bold text-lg tracking-tight leading-tight">{appSettings.appName}</span>
           </div>
 
           <div className="flex md:flex-col items-center justify-around md:justify-start gap-1 md:gap-2 flex-grow">
@@ -450,9 +713,28 @@ export default function App() {
               label="Mora"
               darkMode={darkMode}
             />
+            {profile?.role === 'admin' && (
+              <NavItem 
+                active={activeTab === 'admin'} 
+                onClick={() => setActiveTab('admin')}
+                icon={<ShieldCheck className="w-5 h-5" />}
+                label="Admin"
+                darkMode={darkMode}
+              />
+            )}
           </div>
 
           <div className="hidden md:flex flex-col gap-2 pt-4 border-t border-white/10">
+            <button 
+              onClick={() => {
+                setActiveTab('admin');
+                setAdminSubTab('import');
+              }}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rae-blue-500/10 transition-colors text-rae-blue-400 hover:text-rae-blue-500"
+            >
+              <Upload className="w-5 h-5" />
+              <span>Importar Data</span>
+            </button>
             <button 
               onClick={handleExport}
               disabled={isExporting || loans.length === 0}
@@ -469,6 +751,13 @@ export default function App() {
               <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
             </button>
             <button 
+              onClick={() => setShowPasswordModal(true)}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rae-blue-500/10 transition-colors text-gray-400 hover:text-rae-blue-400"
+            >
+              <Lock className="w-5 h-5" />
+              <span>Cambiar Clave</span>
+            </button>
+            <button 
               onClick={() => signOut(auth)}
               className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-500/10 transition-colors text-red-400 hover:text-red-500"
             >
@@ -480,20 +769,36 @@ export default function App() {
       </nav>
 
       {/* Main Content */}
-      <main className="md:ml-64 p-4 md:p-8 pb-24 md:pb-8">
-        <header className="flex items-center justify-between mb-8">
+      <main className="md:ml-64 min-h-screen p-4 md:p-8 pb-32 md:pb-8">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-4">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">
+            <div className="relative group shrink-0">
+              <div className={cn(
+                "w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-dashed border-rae-blue-500/30 group-hover:border-rae-blue-500/60 transition-all",
+                profile?.logoUrl ? "bg-white" : "bg-rae-blue-500/5 text-rae-blue-500"
+              )}>
+                {profile?.logoUrl ? (
+                  <img src={profile.logoUrl} alt="Business Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <Briefcase className="w-8 h-8 opacity-40" />
+                )}
+                <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Upload className="w-6 h-6 text-white" />
+                  <input type="file" className="hidden" accept="image/png, image/jpeg" onChange={handleLogoUpload} />
+                </label>
+              </div>
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight truncate">
                 {profile?.businessName ? profile.businessName : `Hola, ${user.displayName?.split(' ')[0] || 'Usuario'}`}
               </h2>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-gray-500">
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <p className="text-sm text-gray-500 truncate max-w-[200px] md:max-w-none">
                   {profile?.businessName ? `Operado por ${user.displayName || user.email}` : 'Aquí tienes el estado de tu capital.'}
                 </p>
                 {localStorage.getItem('google_access_token') && (
                   <div className={cn(
-                    "flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                    "flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
                     syncStatus === 'synced' && "bg-emerald-500/10 text-emerald-500",
                     syncStatus === 'syncing' && "bg-indigo-500/10 text-indigo-500",
                     syncStatus === 'error' && "bg-rose-500/10 text-rose-500",
@@ -508,7 +813,7 @@ export default function App() {
                     ) : (
                       <Cloud className="w-3 h-3" />
                     )}
-                    {syncStatus === 'syncing' ? 'Sincronizando Drive' : syncStatus === 'error' ? 'Error Drive' : 'Drive Sincronizado'}
+                    {syncStatus === 'syncing' ? 'Sync Drive' : syncStatus === 'error' ? 'Error Drive' : 'Drive OK'}
                   </div>
                 )}
               </div>
@@ -516,7 +821,7 @@ export default function App() {
           </div>
           <button 
             onClick={() => setShowLoanForm(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-rae-blue-600 hover:bg-rae-blue-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-rae-blue-900/20"
+            className="flex items-center justify-center gap-2 w-full md:w-auto px-5 py-3 md:py-2.5 bg-rae-blue-600 hover:bg-rae-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-rae-blue-900/20 active:scale-95"
           >
             <Plus className="w-5 h-5" />
             Nuevo Préstamo
@@ -588,7 +893,7 @@ export default function App() {
             >
               <CustomerManagement darkMode={darkMode} userId={user.uid} />
             </motion.div>
-          ) : (
+          ) : activeTab === 'reports' ? (
             <motion.div
               key="reports"
               initial={{ opacity: 0, y: 10 }}
@@ -597,12 +902,113 @@ export default function App() {
             >
               <LateReports loans={loans} darkMode={darkMode} />
             </motion.div>
+          ) : (
+            <motion.div
+              key="admin"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-8"
+            >
+              <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-2xl w-fit">
+                <button
+                  onClick={() => setAdminSubTab('users')}
+                  className={cn(
+                    "flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all",
+                    adminSubTab === 'users' ? "bg-white dark:bg-white/10 shadow-sm text-rae-blue-500" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  )}
+                >
+                  <Users className="w-4 h-4" />
+                  Usuarios
+                </button>
+                <button
+                  onClick={() => setAdminSubTab('import')}
+                  className={cn(
+                    "flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all",
+                    adminSubTab === 'import' ? "bg-white dark:bg-white/10 shadow-sm text-rae-blue-500" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  )}
+                >
+                  <Database className="w-4 h-4" />
+                  Importar Data
+                </button>
+                <button
+                  onClick={() => setAdminSubTab('settings')}
+                  className={cn(
+                    "flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all",
+                    adminSubTab === 'settings' ? "bg-white dark:bg-white/10 shadow-sm text-rae-blue-500" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  )}
+                >
+                  <Sliders className="w-4 h-4" />
+                  Ajustes
+                </button>
+              </div>
+
+              {adminSubTab === 'users' && <UserManagement darkMode={darkMode} currentUserId={user.uid} />}
+              {adminSubTab === 'import' && <DataImport darkMode={darkMode} onImportComplete={() => {}} />}
+              {adminSubTab === 'settings' && <AdminSettings darkMode={darkMode} onSettingsUpdate={setAppSettings} />}
+            </motion.div>
           )}
         </AnimatePresence>
       </main>
 
       {/* Modals */}
       <AnimatePresence>
+        {showPasswordModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPasswordModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={cn(
+                "relative w-full max-w-sm p-8 rounded-[2.5rem] shadow-2xl border",
+                darkMode ? "bg-[#0f172a] border-white/10" : "bg-white border-gray-100"
+              )}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">Cambiar Contraseña</h3>
+                <button onClick={() => setShowPasswordModal(false)} className="p-2 hover:bg-gray-500/10 rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {passwordMessage && (
+                <div className={cn(
+                  "mb-4 p-3 rounded-xl text-sm border",
+                  passwordMessage.type === 'success' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : "bg-rose-500/10 border-rose-500/20 text-rose-500"
+                )}>
+                  {passwordMessage.text}
+                </div>
+              )}
+
+              <form onSubmit={handlePasswordChange} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold uppercase text-gray-500 ml-1">Nueva Contraseña</label>
+                  <input 
+                    required
+                    type="password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    className={cn("w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+                <button 
+                  disabled={passwordLoading}
+                  className="w-full py-3 bg-rae-blue-600 hover:bg-rae-blue-700 text-white rounded-xl font-bold transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                >
+                  {passwordLoading ? 'Cambiando...' : 'Actualizar Contraseña'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
         {showLoanForm && (
           <LoanForm 
             onClose={() => setShowLoanForm(false)} 

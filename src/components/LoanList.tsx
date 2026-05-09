@@ -72,27 +72,30 @@ export default function LoanList({ loans, darkMode }: { loans: Loan[], darkMode:
                 </div>
               </div>
 
-              <div className="flex items-center gap-6">
+                <div className="flex flex-col items-end gap-1">
+                  <div className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider",
+                    loan.status === 'active' && (darkMode ? "bg-rae-blue-500/10 text-rae-blue-500" : "bg-rae-blue-50 text-rae-blue-600"),
+                    loan.status === 'paid' && (darkMode ? "bg-emerald-500/10 text-emerald-500" : "bg-emerald-50 text-emerald-600"),
+                    loan.status === 'defaulted' && (darkMode ? "bg-rose-500/10 text-rose-500" : "bg-rose-50 text-rose-600"),
+                  )}>
+                    {loan.status === 'active' && <Clock className="w-3 h-3" />}
+                    {loan.status === 'paid' && <CheckCircle2 className="w-3 h-3" />}
+                    {loan.status === 'defaulted' && <AlertCircle className="w-3 h-3" />}
+                    <span className="hidden xs:inline">{loan.status === 'active' ? 'Activo' : loan.status === 'paid' ? 'Pagado' : 'Mora'}</span>
+                  </div>
+                  <div className="md:hidden text-right">
+                    <p className="font-bold text-rae-blue-500 text-sm">{formatCurrency(loan.remainingBalance)}</p>
+                  </div>
+                </div>
+
                 <div className="hidden md:block text-right">
                   <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Pendiente</p>
                   <p className="font-bold text-rae-blue-500">{formatCurrency(loan.remainingBalance)}</p>
                 </div>
                 
-                <div className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider",
-                  loan.status === 'active' && (darkMode ? "bg-rae-blue-500/10 text-rae-blue-500" : "bg-rae-blue-50 text-rae-blue-600"),
-                  loan.status === 'paid' && (darkMode ? "bg-emerald-500/10 text-emerald-500" : "bg-emerald-50 text-emerald-600"),
-                  loan.status === 'defaulted' && (darkMode ? "bg-rose-500/10 text-rose-500" : "bg-rose-50 text-rose-600"),
-                )}>
-                  {loan.status === 'active' && <Clock className="w-3 h-3" />}
-                  {loan.status === 'paid' && <CheckCircle2 className="w-3 h-3" />}
-                  {loan.status === 'defaulted' && <AlertCircle className="w-3 h-3" />}
-                  {loan.status === 'active' ? 'Activo' : loan.status === 'paid' ? 'Pagado' : 'Mora'}
-                </div>
-
                 <ChevronRight className="w-5 h-5 text-gray-600 group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
           </motion.div>
         ))}
       </div>

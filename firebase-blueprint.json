@@ -10,6 +10,8 @@
         "displayName": { "type": "string" },
         "businessName": { "type": "string" },
         "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "bankBalance": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "createdAt"]
@@ -63,9 +65,40 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "name", "createdAt"]
+    },
+    "AppSettings": {
+      "title": "App Settings",
+      "description": "Global application branding and configuration",
+      "type": "object",
+      "properties": {
+        "appName": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "primaryFont": { "type": "string" },
+        "fontSize": { "type": "string", "enum": ["small", "medium", "large"] },
+        "primaryIconSet": { "type": "string" }
+      },
+      "required": ["appName"]
+    },
+    "UsernameMap": {
+      "title": "Username Mapping",
+      "description": "Public mapping of usernames to emails for login purposes",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "uid": { "type": "string" }
+      },
+      "required": ["email", "uid"]
     }
   },
   "firestore": {
+    "/config/app": {
+      "schema": "AppSettings",
+      "description": "Global app configuration"
+    },
+    "/usernames/{username}": {
+      "schema": "UsernameMap",
+      "description": "Public username to email mapping"
+    },
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "User profiles"

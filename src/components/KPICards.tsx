@@ -9,7 +9,8 @@ import {
   Landmark,
   Pencil,
   X,
-  Check
+  Check,
+  HandCoins
 } from 'lucide-react';
 import { DashboardStats } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
@@ -73,7 +74,7 @@ export default function KPICards({ stats, darkMode, userId }: { stats: Dashboard
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
       {cards.map((card, index) => (
         <motion.div
           key={card.title}
@@ -81,7 +82,7 @@ export default function KPICards({ stats, darkMode, userId }: { stats: Dashboard
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: index * 0.1 }}
           className={cn(
-            "p-6 rounded-3xl border transition-all duration-300 relative group",
+            "p-5 md:p-6 rounded-3xl border transition-all duration-300 relative group",
             darkMode 
               ? "bg-[#111111] border-white/5 hover:border-white/10" 
               : "bg-white border-gray-100 shadow-sm hover:shadow-md"
@@ -101,7 +102,7 @@ export default function KPICards({ stats, darkMode, userId }: { stats: Dashboard
 
           <div className="flex items-center justify-between mb-4">
             <div className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center",
+              "w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center",
               card.color === 'rae-blue' && "bg-rae-blue-500/10 text-rae-blue-500",
               card.color === 'amber' && "bg-amber-500/10 text-amber-500",
               card.color === 'emerald' && "bg-emerald-500/10 text-emerald-500",
@@ -109,7 +110,7 @@ export default function KPICards({ stats, darkMode, userId }: { stats: Dashboard
               {card.icon}
             </div>
             <div className={cn(
-              "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
+              "flex items-center gap-1 text-[10px] md:text-xs font-medium px-2 py-1 rounded-full",
               card.isUp 
                 ? (darkMode ? "bg-emerald-500/10 text-emerald-500" : "bg-emerald-50 text-emerald-600")
                 : (darkMode ? "bg-rose-500/10 text-rose-500" : "bg-rose-50 text-rose-600")
@@ -118,7 +119,7 @@ export default function KPICards({ stats, darkMode, userId }: { stats: Dashboard
               {card.trend}
             </div>
           </div>
-          <p className="text-gray-500 text-sm font-medium mb-1">{card.title}</p>
+          <p className="text-gray-500 text-xs md:text-sm font-medium mb-1">{card.title}</p>
           
           {card.editable && isEditingBalance ? (
             <form onSubmit={handleUpdateBalance} className="mt-2 flex items-center gap-2">
@@ -148,12 +149,10 @@ export default function KPICards({ stats, darkMode, userId }: { stats: Dashboard
               </button>
             </form>
           ) : (
-            <h3 className="text-2xl font-bold tracking-tight">{card.value}</h3>
+            <h3 className="text-xl md:text-2xl font-bold tracking-tight">{card.value}</h3>
           )}
         </motion.div>
       ))}
     </div>
   );
 }
-
-import { HandCoins } from 'lucide-react';

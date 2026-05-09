@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
+import { GoogleGenAI } from "@google/genai";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,9 +12,43 @@ async function startServer() {
   const PORT = 3000;
 
   // JSON parsing middleware
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
 
-  // API Route Example (Balance calculations could be done here if needed)
+  // API Route for Gemini Extraction
+  app.post("/api/extract", async (req: express.Request, resValue: express.Response) => {
+    try {
+      const { base64, mimeType } = req.body;
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+
+      const prompt = `Extrae información de clientes y sus préstamos de este archivo. Devuelve un objeto JSON con dos arrays: 
+        "customers": array de objetos con { name (string, requerido), idNumber (string), phone (string), email (string), address (string) }.
+        "loans": array de objetos con { borrowerName (string, requerido), amount (number), interestRate (number), termMonths (number), startDate (string YYYY-MM-DD), status (string: 'active'|'paid'|'defaulted') }.
+        Intenta relacionar los préstamos con los clientes por el nombre si es posible.
+        Solo devuelve el JSON puro sin bloques de código markdown.`;
+
+      const result = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [
+          { text: prompt },
+          { inlineData: { data: base64, mimeType: mimeType } }
+        ],
+        config: {
+          responseMimeType: "application/json"
+        }
+      });
+
+      let text = result.text || '{"customers":[], "loans":[]}';
+      // Basic cleanup in case of markdown blocks
+      text = text.replace(/```json\n?/, '').replace(/```/, '').trim();
+      
+      const extracted = JSON.parse(text);
+      resValue.json(extracted);
+    } catch (error: any) {
+      console.error("Extraction error:", error);
+      resValue.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });

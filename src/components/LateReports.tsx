@@ -21,7 +21,7 @@ export default function LateReports({ loans, darkMode }: { loans: Loan[], darkMo
         "rounded-3xl border overflow-hidden",
         darkMode ? "bg-[#111111] border-white/5" : "bg-white border-gray-100 shadow-sm"
       )}>
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className={darkMode ? "bg-white/5" : "bg-gray-50"}>
@@ -70,6 +70,46 @@ export default function LateReports({ loans, darkMode }: { loans: Loan[], darkMo
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden divide-y divide-white/5">
+          {lateLoans.length === 0 ? (
+            <div className="px-6 py-12 text-center text-gray-500">
+              No hay reportes de mora pendientes.
+            </div>
+          ) : (
+            lateLoans.map((loan) => (
+              <div key={loan.id} className="p-5 space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-bold text-lg">{loan.borrowerName}</h4>
+                    <p className="text-xs text-gray-500">{formatDate(loan.startDate)}</p>
+                  </div>
+                  <div className={cn(
+                    "flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-bold uppercase",
+                    loan.status === 'defaulted' ? "bg-rose-500/10 text-rose-500" : "bg-amber-500/10 text-amber-500"
+                  )}>
+                    <AlertCircle className="w-3 h-3" />
+                    {loan.status === 'defaulted' ? 'Mora' : 'Pend.'}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-gray-500">Original</p>
+                    <p className="font-mono text-sm">{formatCurrency(loan.amount)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase font-bold text-gray-500">Pendiente</p>
+                    <p className="font-mono text-sm text-rose-500 font-bold">{formatCurrency(loan.remainingBalance)}</p>
+                  </div>
+                </div>
+                <button className="w-full flex items-center justify-center gap-2 py-3 bg-rae-blue-500/5 text-rae-blue-500 font-bold text-sm rounded-xl">
+                  Ver Detalles <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

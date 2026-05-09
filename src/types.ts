@@ -1,9 +1,20 @@
+export interface AppSettings {
+  appName: string;
+  logoUrl?: string;
+  primaryFont?: string;
+  fontSize?: 'small' | 'medium' | 'large';
+  primaryIconSet?: string;
+}
+
 export interface UserProfile {
   uid: string;
+  username?: string;
   email: string;
   displayName: string;
   businessName?: string;
+  logoUrl?: string; // App dashboard logo for the business
   photoURL: string;
+  role?: 'admin' | 'user';
   bankBalance: number;
   createdAt: string;
 }
