@@ -58,6 +58,7 @@ import DataImport from './components/DataImport';
 import AdminSettings, { FONTS } from './components/AdminSettings';
 import LateReports from './components/LateReports';
 import Charts from './components/Charts';
+import LandingPage from './components/LandingPage';
 import { 
   CheckCircle2,
   BarChart3,
@@ -65,7 +66,8 @@ import {
   ShieldCheck,
   Lock,
   Database,
-  Sliders
+  Sliders,
+  ChevronRight
 } from 'lucide-react';
 import { updatePassword } from 'firebase/auth';
 import { AppSettings } from './types';
@@ -110,6 +112,7 @@ export default function App() {
   const [newPassword, setNewPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -568,9 +571,22 @@ export default function App() {
     );
   }
 
+  if (!user && !showAuth) {
+    return <LandingPage onLoginClick={() => setShowAuth(true)} settings={appSettings} />;
+  }
+
   if (!user) {
     return (
       <div className={cn("min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden", darkMode ? "bg-[#0f172a] text-white" : "bg-gray-50 text-gray-900")}>
+        <div className="absolute top-8 left-8 z-50">
+          <button 
+            onClick={() => setShowAuth(false)}
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors font-bold uppercase text-xs"
+          >
+            <ChevronRight className="w-4 h-4 rotate-180" />
+            Volver
+          </button>
+        </div>
         {/* Background Grid & Ornamentation */}
         <div className="absolute inset-0 z-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#2d428d 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
         <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-rae-blue-500/20 rounded-full blur-[120px]"></div>
@@ -582,12 +598,12 @@ export default function App() {
           className={cn("max-w-md w-full relative z-10 text-center space-y-8 p-10 rounded-3xl border shadow-2xl", darkMode ? "bg-[#111111]/80 border-white/5 backdrop-blur-xl" : "bg-white border-gray-100")}
         >
           <div className="flex flex-col items-center space-y-4">
-            <RAELogo className="w-20 h-20 shadow-xl" />
+            <RAELogo settings={appSettings} className="w-20 h-20 shadow-xl" />
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold tracking-tight text-white">
+              <h1 className="text-2xl font-bold tracking-tight text-white uppercase">
                 RAE Marketing Services
               </h1>
-              <p className="text-gray-400 text-sm">Préstamos Management APP</p>
+              <p className="text-gray-400 text-sm font-medium">Préstamos Management APP</p>
             </div>
           </div>
           
@@ -677,11 +693,11 @@ export default function App() {
       className={cn("min-h-screen transition-colors duration-300", darkMode ? "bg-[#0a0f1d] text-white" : "bg-gray-50 text-gray-900")}
     >
       {/* Sidebar / Nav */}
-      <nav className={cn("fixed bottom-0 left-0 right-0 md:top-0 md:bottom-0 md:left-0 md:w-64 border-t md:border-t-0 md:border-r z-50", darkMode ? "bg-black/50 border-white/10 backdrop-blur-xl" : "bg-white/80 border-gray-200 backdrop-blur-xl")}>
-        <div className="h-full flex flex-col p-4">
+      <nav className={cn("fixed bottom-0 left-0 right-0 md:top-0 md:bottom-0 md:left-0 md:w-64 border-t md:border-t-0 md:border-r z-50 overflow-y-auto custom-scrollbar", darkMode ? "bg-black/50 border-white/10 backdrop-blur-xl" : "bg-white/80 border-gray-200 backdrop-blur-xl")}>
+        <div className="min-h-full flex flex-col p-4">
           <div className="hidden md:flex flex-col items-center gap-3 mb-10 px-2 mt-4 text-center">
             <RAELogo settings={appSettings} className="w-16 h-16 shadow-xl" />
-            <span className="font-bold text-lg tracking-tight leading-tight">{appSettings.appName}</span>
+            <span className="font-bold text-lg tracking-tight leading-tight uppercase">{appSettings.appName}</span>
           </div>
 
           <div className="flex md:flex-col items-center justify-around md:justify-start gap-1 md:gap-2 flex-grow">
