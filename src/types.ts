@@ -1,9 +1,30 @@
+export interface LandingPageSettings {
+  heroTitle: string;
+  heroSubtitle: string;
+  heroCtaText: string;
+  heroShowDemo?: boolean;
+  heroGradient?: string;
+  backgroundColor?: string;
+  features: Array<{
+    title: string;
+    description: string;
+    icon: string;
+    color: string;
+  }>;
+  showcaseTitle: string;
+  showcaseDescription: string;
+  ctaTitle: string;
+  ctaDescription: string;
+  ctaButtonText: string;
+}
+
 export interface AppSettings {
   appName: string;
   logoUrl?: string;
   primaryFont?: string;
   fontSize?: 'small' | 'medium' | 'large';
   primaryIconSet?: string;
+  landingPage?: LandingPageSettings;
 }
 
 export interface UserProfile {

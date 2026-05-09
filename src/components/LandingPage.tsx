@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { AppSettings } from '../types';
+import { FONTS } from '../constants';
 
 interface LandingPageProps {
   onLoginClick: () => void;
@@ -26,6 +27,8 @@ interface LandingPageProps {
 
 export default function LandingPage({ onLoginClick, settings }: LandingPageProps) {
   const [activeFeature, setActiveFeature] = useState(0);
+
+  const landing = settings?.landingPage;
 
   const Logo = () => {
     if (settings?.logoUrl) {
@@ -42,37 +45,40 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
     );
   };
 
-  const features = [
+  const IconComponent = ({ name, className }: { name: string, className?: string }) => {
+    const icons: Record<string, any> = {
+      LayoutDashboard, HandCoins, Users, ShieldCheck, Database, Cloud, TrendingUp, CheckCircle2, Lock, Smartphone, FileText, Briefcase
+    };
+    const Icon = icons[name] || CheckCircle2;
+    return <Icon className={className} />;
+  };
+
+  const features = landing?.features || [
     {
       title: "Control de Capital",
       description: "KPIs en tiempo real para visualizar tu rendimiento, mora y proyecciones de intereses.",
-      icon: <LayoutDashboard className="w-8 h-8" />,
+      icon: "LayoutDashboard",
       color: "from-blue-500 to-indigo-600"
     },
     {
       title: "Gestión de Préstamos",
       description: "Crea contratos, amortizaciones y pagos en segundos con nuestra interfaz intuitiva.",
-      icon: <HandCoins className="w-8 h-8" />,
+      icon: "HandCoins",
       color: "from-emerald-500 to-teal-600"
-    },
-    {
-      title: "Inteligencia Artificial",
-      description: "Analiza documentos, IDs y contratos automáticamente para extraer datos sin errores manuales.",
-      icon: <Database className="w-8 h-8" />,
-      color: "from-purple-500 to-pink-600"
-    },
-    {
-      title: "Respaldo Total",
-      description: "Tus datos viajan seguros con sincronización automática en Google Drive y servidores cifrados.",
-      icon: <Cloud className="w-8 h-8" />,
-      color: "from-sky-500 to-blue-600"
     }
   ];
 
   return (
-    <div className="bg-[#0a0f1d] text-white selection:bg-blue-500/30">
+    <div 
+      className="text-white selection:bg-blue-500/30 min-h-screen" 
+      style={{ 
+        backgroundColor: landing?.backgroundColor || '#0a0f1d',
+        fontFamily: settings?.primaryFont ? (FONTS.find(f => f.name === settings.primaryFont)?.value || 'inherit') : 'inherit',
+        fontSize: settings?.fontSize === 'small' ? '0.9rem' : settings?.fontSize === 'large' ? '1.1rem' : '1rem'
+      }}
+    >
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0f1d]/80 backdrop-blur-xl border-b border-white/5">
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b border-white/5" style={{ backgroundColor: `${landing?.backgroundColor || '#0a0f1d'}cc` }}>
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Logo />
@@ -89,7 +95,7 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
               onClick={onLoginClick}
               className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-500/20"
             >
-              Empezar Gratis
+              {landing?.heroCtaText || 'Empezar Gratis'}
             </button>
           </div>
         </div>
@@ -109,7 +115,7 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider mb-8"
           >
             <ShieldCheck className="w-4 h-4" />
-            Control de Préstamos Empresarial
+            {settings?.appName || 'Control de Préstamos Empresarial'}
           </motion.div>
           
           <motion.h1 
@@ -118,9 +124,8 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl md:text-7xl font-bold tracking-tighter mb-8 leading-[1.1]"
           >
-            Domina tus Finanzas con <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">
-              Inteligencia y Control Total
+            <span className={cn("text-transparent bg-clip-text bg-gradient-to-r", landing?.heroGradient || "from-blue-400 via-indigo-400 to-purple-400")}>
+              {landing?.heroTitle || 'Domina tus Finanzas con Inteligencia'}
             </span>
           </motion.h1>
 
@@ -130,8 +135,7 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10"
           >
-            La plataforma definitiva para prestamistas y agencias. 
-            Gestiona clientes, automatiza reportes de mora y sincroniza tu data en tiempo real.
+            {landing?.heroSubtitle || 'La plataforma definitiva para prestamistas y agencias.'}
           </motion.p>
 
           <motion.div 
@@ -144,14 +148,16 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
               onClick={onLoginClick}
               className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-blue-500/30 flex items-center justify-center gap-2 group"
             >
-              Comenzar Ahora
+              {landing?.heroCtaText || 'Comenzar Ahora'}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button 
-              className="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl font-bold text-lg transition-all"
-            >
-              Ver Demo
-            </button>
+            {landing?.heroShowDemo && (
+              <button 
+                className="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl font-bold text-lg transition-all"
+              >
+                Ver Demo
+              </button>
+            )}
           </motion.div>
         </div>
       </section>
@@ -160,10 +166,10 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
       <section className="py-10 border-y border-white/5 bg-white/[0.02]">
         <div className="max-w-7xl mx-auto px-6 overflow-hidden">
           <div className="flex flex-wrap items-center justify-center gap-12 opacity-40 grayscale hover:grayscale-0 transition-all">
-            <span className="font-bold text-2xl flex items-center gap-2"><Cloud className="w-6 h-6" /> Google Drive</span>
-            <span className="font-bold text-2xl flex items-center gap-2"><Database className="w-6 h-6" /> Supabase</span>
-            <span className="font-bold text-2xl flex items-center gap-2"><Lock className="w-6 h-6" /> FireStore</span>
-            <span className="font-bold text-2xl flex items-center gap-2"><Smartphone className="w-6 h-6" /> PWA Ready</span>
+            <span className="font-bold text-2xl flex items-center gap-2 text-gray-400 hover:text-white transition-colors duration-500"><Cloud className="w-6 h-6" /> Google Drive</span>
+            <span className="font-bold text-2xl flex items-center gap-2 text-gray-400 hover:text-white transition-colors duration-500"><Database className="w-6 h-6" /> Supabase</span>
+            <span className="font-bold text-2xl flex items-center gap-2 text-gray-400 hover:text-white transition-colors duration-500"><Lock className="w-6 h-6" /> FireStore</span>
+            <span className="font-bold text-2xl flex items-center gap-2 text-gray-400 hover:text-white transition-colors duration-500"><Smartphone className="w-6 h-6" /> PWA Ready</span>
           </div>
         </div>
       </section>
@@ -173,10 +179,10 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-20">
             <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">Poderosas herramientas para tu negocio</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto text-lg">Todo lo que necesitas para escalar tu operación de préstamos en una sola plataforma robusta y segura.</p>
+            <p className="text-gray-400 max-w-2xl mx-auto text-lg">Optimiza cada aspecto de tu operación financiera con tecnología de punta.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, idx) => (
               <motion.div
                 key={idx}
@@ -187,7 +193,7 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
                   "w-16 h-16 rounded-2xl flex items-center justify-center mb-6 bg-gradient-to-br shadow-lg",
                   feature.color
                 )}>
-                  {feature.icon}
+                  <IconComponent name={feature.icon} className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-4">{feature.title}</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">{feature.description}</p>
@@ -203,16 +209,18 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
             <div className="space-y-8">
               <div className="inline-flex px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider">
-                Eficiencia Operativa
+                Control Total
               </div>
               <h2 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight">
-                Gestiona miles de préstamos sin perder el control.
+                {landing?.showcaseTitle || 'Gestiona miles de préstamos sin perder el control.'}
               </h2>
+              <p className="text-gray-400 text-lg">
+                {landing?.showcaseDescription || 'Optimiza tu negocio de préstamos con nuestra solución empresarial.'}
+              </p>
               
               <div className="space-y-6">
                 {[
                   { title: "Dashboard en tiempo real", desc: "Monitorea tu capital circulante e intereses al instante." },
-                  { title: "Seguimiento de Clientes", desc: "Historial completo de pagos y documentos por cada usuario." },
                   { title: "Reportes Automatizados", desc: "Descarga reportes PDF/Excel para contabilidad en un clic." }
                 ].map((item, i) => (
                   <div key={i} className="flex gap-4">
@@ -298,18 +306,17 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
 
           <div className="relative z-10">
             <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-8">
-              ¿Listo para transformar <br /> tu negocio de préstamos?
+              {landing?.ctaTitle || '¿Listo para transformar tu negocio?'}
             </h2>
             <p className="text-blue-100 text-lg md:text-xl max-w-2xl mx-auto mb-10">
-              Únete a las agencias que ya están optimizando su capital con RAE Marketing Services. 
-              El control que siempre quisiste, ahora es una realidad.
+              {landing?.ctaDescription || 'Únete a las agencias que ya están optimizando su capital.'}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button 
                 onClick={onLoginClick}
                 className="w-full sm:w-auto px-10 py-5 bg-white text-blue-600 rounded-2xl font-bold text-xl shadow-xl hover:scale-105 transition-all active:scale-95"
               >
-                Empezar Ahora
+                {landing?.ctaButtonText || 'Empezar Ahora'}
               </button>
               <p className="text-blue-200 text-sm font-medium">No se requiere tarjeta de crédito</p>
             </div>
@@ -328,9 +335,6 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
             <p className="text-gray-500 max-w-sm mb-6 uppercase text-xs tracking-widest font-bold">
               Potenciando negocios de préstamos con tecnología de vanguardia.
             </p>
-            <div className="flex gap-4">
-              {/* Social icons placeholders */}
-            </div>
           </div>
           <div>
             <h4 className="font-bold mb-6 text-sm uppercase tracking-widest text-gray-400">Producto</h4>
@@ -352,7 +356,7 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-white/5 text-center text-gray-600 text-sm">
-          <p>© 2026 RAE Marketing Services. Todos los derechos reservados.</p>
+          <p>© 2026 {settings?.appName || 'RAE Marketing Services'}. Todos los derechos reservados.</p>
         </div>
       </footer>
     </div>

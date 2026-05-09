@@ -55,10 +55,11 @@ import LoanForm from './components/LoanForm';
 import CustomerManagement from './components/CustomerManagement';
 import UserManagement from './components/UserManagement';
 import DataImport from './components/DataImport';
-import AdminSettings, { FONTS } from './components/AdminSettings';
+import AdminSettings from './components/AdminSettings';
 import LateReports from './components/LateReports';
 import Charts from './components/Charts';
 import LandingPage from './components/LandingPage';
+import { FONTS } from './constants';
 import { 
   CheckCircle2,
   BarChart3,
