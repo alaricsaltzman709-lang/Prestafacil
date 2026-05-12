@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { X, Calculator, UserPlus, Users, CalendarDays } from 'lucide-react';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc, increment } from 'firebase/firestore';
-import { calculateInstallment, calculateTotalPayable } from '../lib/calculations';
+import { calculateInstallmentSimple } from '../lib/calculations';
 import { cn, formatCurrency } from '../lib/utils';
 import { Customer, PaymentFrequency } from '../types';
 
@@ -12,7 +12,7 @@ export default function LoanForm({ onClose, darkMode, userId }: { onClose: () =>
     customerId: '',
     borrowerName: '',
     amount: '',
-    annualRate: '15',
+    rate: '5',
     installments: '12',
     frequency: 'monthly' as PaymentFrequency,
     startDate: new Date().toISOString().split('T')[0]
@@ -34,14 +34,13 @@ export default function LoanForm({ onClose, darkMode, userId }: { onClose: () =>
     fetchCustomers();
   }, [userId]);
 
-  const installment = calculateInstallment(
+  const installment = calculateInstallmentSimple(
     Number(formData.amount) || 0,
-    Number(formData.annualRate),
-    Number(formData.installments),
-    formData.frequency
+    Number(formData.rate),
+    Number(formData.installments)
   );
 
-  const totalPayable = calculateTotalPayable(installment, Number(formData.installments));
+  const totalPayable = Number((installment * Number(formData.installments)).toFixed(2));
 
   const getEndDate = () => {
     if (!formData.startDate || !formData.installments) return null;
@@ -80,7 +79,7 @@ export default function LoanForm({ onClose, darkMode, userId }: { onClose: () =>
         customerId: formData.customerId || null,
         borrowerName: formData.borrowerName,
         amount: loanAmount,
-        interestRate: Number(formData.annualRate),
+        interestRate: Number(formData.rate),
         installments: Number(formData.installments),
         paymentFrequency: formData.frequency,
         startDate: formData.startDate,
@@ -186,12 +185,12 @@ export default function LoanForm({ onClose, darkMode, userId }: { onClose: () =>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Tasa Anual (%)</label>
+              <label className="text-sm font-medium text-gray-400">Tasa por Período (%)</label>
               <input 
                 required
                 type="number"
-                value={formData.annualRate}
-                onChange={e => setFormData({...formData, annualRate: e.target.value})}
+                value={formData.rate}
+                onChange={e => setFormData({...formData, rate: e.target.value})}
                 className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-rae-blue-500", darkMode ? "bg-black/20 border-white/10" : "bg-gray-50 border-gray-200")}
               />
             </div>

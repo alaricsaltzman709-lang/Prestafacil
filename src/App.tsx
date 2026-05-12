@@ -83,8 +83,10 @@ import AdminSettings from './components/AdminSettings';
 import LateReports from './components/LateReports';
 import Charts from './components/Charts';
 import LandingPage from './components/LandingPage';
+import LoanTableCreator from './components/LoanTableCreator';
 import { FONTS } from './constants';
 import { 
+  Table,
   CheckCircle2,
   BarChart3,
   LayoutList,
@@ -127,6 +129,7 @@ export default function App() {
     logoUrl: 'https://raemarketingservices.com/wp-content/uploads/2026/04/RAE-Logo-2.png'
   });
   const [showLoanForm, setShowLoanForm] = useState(false);
+  const [showLoanTableCreator, setShowLoanTableCreator] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'idle'>('idle');
   const [isExporting, setIsExporting] = useState(false);
@@ -873,13 +876,22 @@ export default function App() {
               </div>
             </div>
           </div>
-          <button 
-            onClick={() => setShowLoanForm(true)}
-            className="flex items-center justify-center gap-2 w-full md:w-auto px-5 py-3 md:py-2.5 bg-rae-blue-600 hover:bg-rae-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-rae-blue-900/20 active:scale-95"
-          >
-            <Plus className="w-5 h-5" />
-            Nuevo Préstamo
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowLoanTableCreator(true)}
+              className="flex items-center justify-center gap-2 w-full md:w-auto px-4 py-3 md:py-2.5 bg-rae-blue-500/10 hover:bg-rae-blue-500/20 text-rae-blue-500 rounded-xl font-bold transition-all active:scale-95 border border-rae-blue-500/20"
+            >
+              <Table className="w-5 h-5" />
+              Tablas
+            </button>
+            <button 
+              onClick={() => setShowLoanForm(true)}
+              className="flex items-center justify-center gap-2 w-full md:w-auto px-5 py-3 md:py-2.5 bg-rae-blue-600 hover:bg-rae-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-rae-blue-900/20 active:scale-95"
+            >
+              <Plus className="w-5 h-5" />
+              Nuevo Préstamo
+            </button>
+          </div>
         </header>
 
         <AnimatePresence mode="wait">
@@ -1110,6 +1122,14 @@ export default function App() {
             onClose={() => setShowLoanForm(false)} 
             darkMode={darkMode}
             userId={user.uid}
+          />
+        )}
+        {showLoanTableCreator && (
+          <LoanTableCreator
+            onClose={() => setShowLoanTableCreator(false)}
+            darkMode={darkMode}
+            userId={user.uid}
+            profile={profile}
           />
         )}
       </AnimatePresence>

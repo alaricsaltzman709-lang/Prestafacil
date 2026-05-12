@@ -64,6 +64,21 @@ export interface Customer {
 
 export type PaymentFrequency = 'weekly' | 'biweekly' | 'monthly';
 
+export interface LoanTable {
+  id: string;
+  userId: string;
+  title: string;
+  frequency: PaymentFrequency;
+  interestRate: number;
+  installments: number; // e.g. 6 (quincenas)
+  rows: Array<{
+    amount: number;
+    installmentAmount: number;
+    totalAmount: number;
+  }>;
+  createdAt: string;
+}
+
 export interface Loan {
   id: string;
   userId: string;

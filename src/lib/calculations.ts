@@ -1,5 +1,12 @@
 import { PaymentFrequency } from '../types';
 
+export function calculateInstallmentSimple(principal: number, periodRate: number, installments: number): number {
+  if (installments === 0) return 0;
+  const interestPerPeriod = principal * (periodRate / 100);
+  const principalPerPeriod = principal / installments;
+  return Number((principalPerPeriod + interestPerPeriod).toFixed(2));
+}
+
 /**
  * Calculates installment using French Amortization system based on frequency
  */
