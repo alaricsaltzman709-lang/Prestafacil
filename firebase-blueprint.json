@@ -88,6 +88,32 @@
         "uid": { "type": "string" }
       },
       "required": ["email", "uid"]
+    },
+    "LoanTable": {
+      "title": "Loan Table",
+      "description": "Customizable loan payment tables for users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "frequency": { "type": "string", "enum": ["weekly", "biweekly", "monthly"] },
+        "interestRate": { "type": "number" },
+        "installments": { "type": "integer" },
+        "rows": { 
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "amount": { "type": "number" },
+              "installmentAmount": { "type": "number" },
+              "totalAmount": { "type": "number" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "frequency", "interestRate", "installments", "rows", "createdAt"]
     }
   },
   "firestore": {
@@ -110,6 +136,10 @@
     "/loans/{loanId}": {
       "schema": "Loan",
       "description": "Loan records"
+    },
+    "/loan_tables/{tableId}": {
+      "schema": "LoanTable",
+      "description": "Custom user loan tables"
     },
     "/loans/{loanId}/payments/{paymentId}": {
       "schema": "Payment",

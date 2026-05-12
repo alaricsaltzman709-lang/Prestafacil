@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Plus, Save, Trash2, Calculator, ArrowRight, Table, Business, Briefcase, Phone, Mail } from 'lucide-react';
+import { X, Plus, Save, Trash2, Calculator, ArrowRight, Table, Download, Building, Briefcase, Phone, Mail, FileText } from 'lucide-react';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, deleteDoc, doc, orderBy, Timestamp } from 'firebase/firestore';
 import { calculateInstallmentSimple } from '../lib/calculations';
 import { cn, formatCurrency } from '../lib/utils';
 import { LoanTable, PaymentFrequency, UserProfile } from '../types';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function LoanTableCreator({ onClose, darkMode, userId, profile }: { onClose: () => void, darkMode: boolean, userId: string, profile: UserProfile | null }) {
   const [formData, setFormData] = useState({
@@ -23,11 +25,33 @@ export default function LoanTableCreator({ onClose, darkMode, userId, profile }:
   useEffect(() => {
     const fetchTables = async () => {
       try {
-        const q = query(collection(db, 'loan_tables'), where('userId', '==', userId));
+        const q = query(
+          collection(db, 'loan_tables'), 
+          where('userId', '==', userId),
+          orderBy('createdAt', 'desc')
+        );
         const snap = await getDocs(q);
-        setTables(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as LoanTable[]);
+        setTables(snap.docs.map(doc => {
+          const data = doc.data();
+          return { 
+            id: doc.id, 
+            ...data,
+            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt 
+          };
+        }) as LoanTable[]);
       } catch (error) {
         console.error("Error fetching tables:", error);
+        // Fallback: try without orderBy if index is missing (Permission Denied can sometimes mask index issues in certain Firestore versions/configs)
+        try {
+           const q = query(collection(db, 'loan_tables'), where('userId', '==', userId));
+           const snap = await getDocs(q);
+           setTables(snap.docs.map(doc => {
+             const data = doc.data();
+             return { id: doc.id, ...data, createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt };
+           }).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) as LoanTable[]);
+        } catch (innerError) {
+           handleFirestoreError(innerError, OperationType.GET, 'loan_tables');
+        }
       }
     };
     fetchTables();
@@ -57,20 +81,25 @@ export default function LoanTableCreator({ onClose, darkMode, userId, profile }:
     }
     setLoading(true);
     try {
-      const newTable: Omit<LoanTable, 'id'> = {
+      const tableData = {
         userId,
         title: formData.title,
         frequency: formData.frequency,
         interestRate: Number(formData.rate),
         installments: Number(formData.installments),
         rows: previewRows,
-        createdAt: new Date().toISOString()
+        createdAt: serverTimestamp()
       };
-      const docRef = await addDoc(collection(db, 'loan_tables'), {
-          ...newTable,
-          createdAt: serverTimestamp()
-      });
-      setTables([{ id: docRef.id, ...newTable } as LoanTable, ...tables]);
+      
+      const docRef = await addDoc(collection(db, 'loan_tables'), tableData);
+      
+      const newTableEntry: LoanTable = {
+        id: docRef.id,
+        ...tableData,
+        createdAt: new Date().toISOString() // Local approximation for UI
+      } as LoanTable;
+
+      setTables([newTableEntry, ...tables]);
       setActiveTab('list');
       setFormData({
         title: '',
@@ -84,6 +113,55 @@ export default function LoanTableCreator({ onClose, darkMode, userId, profile }:
     } finally {
       setLoading(false);
     }
+  };
+
+  const downloadPDF = (table: LoanTable | any) => {
+    const doc = new jsPDF();
+    const frequencyLabel = table.frequency === 'weekly' ? 'Semanales' : table.frequency === 'biweekly' ? 'Quincenales' : 'Mensuales';
+    const cuotaLabel = table.frequency === 'weekly' ? 'Semanal' : table.frequency === 'biweekly' ? 'Quincenal' : 'Mensual';
+    const durationLabel = table.frequency === 'weekly' ? 'semanas' : table.frequency === 'biweekly' ? 'quincenas' : 'meses';
+
+    // Business Name & Logo (if possible)
+    doc.setTextColor(184, 134, 11); // DarkGoldenRod
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text(profile?.businessName || 'INVERSIONES', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setTextColor(128, 128, 128);
+    doc.text("Crecemos contigo, paso a paso, con propósito.", 105, 28, { align: 'center' });
+
+    // Table Title
+    doc.setFontSize(16);
+    doc.setTextColor(218, 165, 32); // GoldenRod
+    doc.text(table.title.toUpperCase(), 105, 45, { align: 'center' });
+
+    // Payment Table
+    autoTable(doc, {
+      startY: 55,
+      head: [['Monto', 'Duración', `Cuota ${cuotaLabel}`]],
+      body: table.rows.map((row: any) => [
+        `RD$ ${row.amount.toLocaleString()}`,
+        `${table.installments} ${durationLabel}`,
+        `RD$ ${row.installmentAmount.toLocaleString()}`
+      ]),
+      headStyles: { fillColor: [218, 165, 32], textColor: [255, 255, 255], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [250, 250, 250] },
+      margin: { top: 55 },
+      styles: { fontSize: 10, cellPadding: 5 }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    
+    doc.setFontSize(9);
+    doc.setTextColor(128, 128, 128);
+    doc.text("Tiempo y forma de pago de los préstamos pueden variar a preferencia del cliente.", 105, finalY, { align: 'center' });
+    
+    if (profile?.email) {
+      doc.text(`Escríbenos: ${profile.email}`, 105, finalY + 10, { align: 'center' });
+    }
+
+    doc.save(`${table.title.replace(/\s+/g, '_')}.pdf`);
   };
 
   const handleDelete = async (id: string) => {
@@ -209,14 +287,23 @@ export default function LoanTableCreator({ onClose, darkMode, userId, profile }:
                     </div>
                   </div>
 
-                  <button 
-                    onClick={handleSave}
-                    disabled={loading}
-                    className="w-full py-4 bg-rae-blue-600 hover:bg-rae-blue-700 text-white rounded-2xl font-bold transition-all shadow-xl shadow-rae-blue-900/20 active:scale-95 flex items-center justify-center gap-2"
-                  >
-                    <Save className="w-5 h-5" />
-                    {loading ? 'Guardando...' : 'Guardar Tabla'}
-                  </button>
+                  <div className="flex gap-4">
+                    <button 
+                        onClick={handleSave}
+                        disabled={loading}
+                        className="flex-grow py-4 bg-rae-blue-600 hover:bg-rae-blue-700 text-white rounded-2xl font-bold transition-all shadow-xl shadow-rae-blue-900/20 active:scale-95 flex items-center justify-center gap-2"
+                    >
+                        <Save className="w-5 h-5" />
+                        {loading ? 'Guardando...' : 'Guardar Tabla'}
+                    </button>
+                    <button 
+                        onClick={() => downloadPDF({ title: formData.title, frequency: formData.frequency, interestRate: formData.rate, installments: formData.installments, rows: previewRows })}
+                        className="px-6 py-4 bg-white/5 border border-white/10 hover:bg-white/10 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                        <Download className="w-5 h-5" />
+                        PDF
+                    </button>
+                  </div>
                 </div>
 
                 {/* Preview Side */}
@@ -296,38 +383,42 @@ export default function LoanTableCreator({ onClose, darkMode, userId, profile }:
                     </div>
                 ) : (
                     tables.map(table => (
-                        <div key={table.id} className={cn("group p-6 rounded-[2rem] border relative overflow-hidden transition-all hover:scale-[1.02]", darkMode ? "bg-white/5 border-white/10" : "bg-white border-gray-100 shadow-sm")}>
+                        <div key={table.id} className={cn("group p-6 rounded-[2rem] border relative overflow-hidden transition-all shadow-sm hover:shadow-xl", darkMode ? "bg-white/5 border-white/10" : "bg-white border-gray-100")}>
                             <div className="flex items-center justify-between mb-4">
                                 <div className="w-10 h-10 rounded-xl bg-rae-blue-500/10 flex items-center justify-center text-rae-blue-500">
                                     <Table className="w-5 h-5" />
                                 </div>
-                                <button 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDelete(table.id);
-                                    }}
-                                    className="p-2 text-rose-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-500/10 rounded-lg"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                <div className="flex items-center gap-1">
+                                    <button 
+                                        onClick={() => downloadPDF(table)}
+                                        className="p-2 text-rae-blue-500 hover:bg-rae-blue-500/10 rounded-lg transition-all"
+                                        title="Descargar PDF"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                        onClick={() => handleDelete(table.id)}
+                                        className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all"
+                                        title="Eliminar"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
                             <h4 className="font-bold text-lg mb-1 truncate">{table.title}</h4>
-                            <p className="text-xs text-gray-500 mb-4">{table.rows.length} montos calculados</p>
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{table.rows.length} montos • {table.installments} cuotas</p>
                             
-                            <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                                <span className="px-2 py-1 bg-white/5 rounded-lg">{table.interestRate}% Tasa</span>
-                                <span className="px-2 py-1 bg-white/5 rounded-lg">{table.frequency}</span>
+                            <div className="mt-4 flex items-center gap-2">
+                                <span className="px-2 py-1 bg-rae-blue-500/10 text-rae-blue-500 rounded text-[10px] font-bold uppercase italic">{table.frequency}</span>
+                                <span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded text-[10px] font-bold uppercase italic">{table.interestRate}% de interés</span>
                             </div>
 
                             <button
-                                onClick={() => {
-                                    // I could add a full view here
-                                    alert("ID de tabla copiado al portapapeles (Simulado)");
-                                }}
-                                className="mt-6 w-full py-3 bg-rae-blue-500/10 text-rae-blue-500 rounded-xl font-bold hover:bg-rae-blue-500 hover:text-white transition-all flex items-center justify-center gap-2"
+                                onClick={() => downloadPDF(table)}
+                                className="mt-6 w-full py-3 bg-rae-blue-600 text-white rounded-xl font-bold hover:bg-rae-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-rae-blue-900/20"
                             >
-                                Ver Detalle
-                                <ArrowRight className="w-4 h-4" />
+                                <Download className="w-4 h-4" />
+                                Descargar PDF
                             </button>
                         </div>
                     ))

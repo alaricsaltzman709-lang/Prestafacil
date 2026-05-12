@@ -59,16 +59,17 @@ service cloud.firestore {
     }
 
     function isValidLoan(data) {
-      return data.keys().hasAll(['userId', 'borrowerName', 'amount', 'interestRate', 'termMonths', 'status', 'createdAt'])
+      return data.keys().hasAll(['userId', 'borrowerName', 'amount', 'interestRate', 'installments', 'paymentFrequency', 'installmentAmount', 'totalPayable', 'remainingBalance', 'status', 'createdAt'])
         && data.userId == request.auth.uid
         && data.borrowerName is string && data.borrowerName.size() > 0 && data.borrowerName.size() <= 100
         && data.amount is number && data.amount > 0
         && data.interestRate is number && data.interestRate >= 0
-        && data.termMonths is number && data.termMonths > 0
+        && data.installments is number && data.installments > 0
+        && data.paymentFrequency in ['weekly', 'biweekly', 'monthly']
+        && data.installmentAmount is number && data.installmentAmount > 0
+        && data.totalPayable is number && data.totalPayable > 0
+        && data.remainingBalance is number
         && data.status in ['active', 'paid', 'defaulted']
-        && (!('monthlyInstallment' in data) || data.monthlyInstallment is number)
-        && (!('totalPayable' in data) || data.totalPayable is number)
-        && (!('remainingBalance' in data) || data.remainingBalance is number)
         && data.createdAt is timestamp;
     }
 
@@ -82,7 +83,26 @@ service cloud.firestore {
         && data.createdAt is timestamp;
     }
 
+    function isValidLoanTable(data) {
+      return data.keys().hasAll(['userId', 'title', 'frequency', 'interestRate', 'installments', 'rows', 'createdAt'])
+        && data.userId == request.auth.uid
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.frequency in ['weekly', 'biweekly', 'monthly']
+        && data.interestRate is number
+        && data.installments is number
+        && data.rows is list && data.rows.size() <= 100
+        && data.createdAt is timestamp;
+    }
+
     // Collection matches
+    match /loan_tables/{tableId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidLoanTable(incoming()) && isValidId(tableId);
+      allow update: if false; // Tables are immutable for now, delete and recreate
+      allow delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
@@ -97,7 +117,7 @@ service cloud.firestore {
 
     match /customers/{customerId} {
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && isValidCustomer(incoming()) && isValidId(customerId);
       allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin())
         && incoming().userId == existing().userId
@@ -107,14 +127,14 @@ service cloud.firestore {
 
     match /loans/{loanId} {
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && isValidLoan(incoming()) && isValidId(loanId);
       allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin())
         && incoming().userId == existing().userId
         && incoming().createdAt == existing().createdAt
         && (
-          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'remainingBalance', 'totalPayable', 'monthlyInstallment'])
-          || incoming().diff(existing()).affectedKeys().hasOnly(['borrowerName', 'amount', 'interestRate', 'termMonths'])
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'remainingBalance', 'totalPayable', 'installmentAmount'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['borrowerName', 'amount', 'interestRate', 'installments', 'paymentFrequency'])
         )
         && isValidLoan(incoming());
       allow delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
