@@ -142,7 +142,7 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
           >
             <button 
               onClick={onLoginClick}
@@ -159,6 +159,22 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
               </button>
             )}
           </motion.div>
+
+          {landing?.heroImageUrl && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="relative max-w-5xl mx-auto"
+            >
+               <div className="absolute inset-0 bg-blue-600/20 blur-[100px] -z-10 rounded-full"></div>
+               <img 
+                src={landing.heroImageUrl} 
+                alt="Product Preview" 
+                className="w-full rounded-[2.5rem] border border-white/10 shadow-2xl"
+              />
+            </motion.div>
+          )}
         </div>
       </section>
 
@@ -245,49 +261,55 @@ export default function LandingPage({ onLoginClick, settings }: LandingPageProps
 
             <div className="relative">
               <div className="aspect-square bg-gradient-to-tr from-blue-600/20 to-purple-600/20 rounded-full blur-[100px] absolute inset-0"></div>
-              <div className="relative p-8 rounded-3xl border border-white/10 bg-[#111111]/80 backdrop-blur-xl shadow-2xl">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
-                      <TrendingUp className="w-5 h-5" />
+              {landing?.showcaseImageUrl ? (
+                <div className="relative p-2 rounded-[2rem] border border-white/10 bg-[#111111]/80 backdrop-blur-xl shadow-2xl overflow-hidden">
+                  <img src={landing.showcaseImageUrl} alt="Showcase" className="w-full rounded-[1.5rem]" />
+                </div>
+              ) : (
+                <div className="relative p-8 rounded-3xl border border-white/10 bg-[#111111]/80 backdrop-blur-xl shadow-2xl">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+                        <TrendingUp className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-500 uppercase">Crecimiento</p>
+                        <p className="font-bold">Análisis Mensual</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase">Crecimiento</p>
-                      <p className="font-bold">Análisis Mensual</p>
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold text-emerald-500 uppercase">+24.5%</p>
+                      <p className="text-emerald-500 font-bold">En Alza</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold text-emerald-500 uppercase">+24.5%</p>
-                    <p className="text-emerald-500 font-bold">En Alza</p>
+                  
+                  {/* Simulated Chart Bars */}
+                  <div className="flex items-end gap-3 h-48 mb-8">
+                    {[40, 70, 45, 90, 65, 80, 100].map((h, i) => (
+                      <motion.div 
+                        key={i}
+                        initial={{ height: 0 }}
+                        whileInView={{ height: `${h}%` }}
+                        transition={{ delay: i * 0.1, duration: 1 }}
+                        className="flex-grow bg-blue-600/20 rounded-t-lg relative group cursor-pointer"
+                      >
+                        <div className="absolute inset-0 bg-blue-600 rounded-t-lg scale-x-0 group-hover:scale-x-100 transition-transform origin-bottom duration-300"></div>
+                      </motion.div>
+                    ))}
                   </div>
-                </div>
-                
-                {/* Simulated Chart Bars */}
-                <div className="flex items-end gap-3 h-48 mb-8">
-                  {[40, 70, 45, 90, 65, 80, 100].map((h, i) => (
-                    <motion.div 
-                      key={i}
-                      initial={{ height: 0 }}
-                      whileInView={{ height: `${h}%` }}
-                      transition={{ delay: i * 0.1, duration: 1 }}
-                      className="flex-grow bg-blue-600/20 rounded-t-lg relative group cursor-pointer"
-                    >
-                      <div className="absolute inset-0 bg-blue-600 rounded-t-lg scale-x-0 group-hover:scale-x-100 transition-transform origin-bottom duration-300"></div>
-                    </motion.div>
-                  ))}
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                    <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Capital Activo</p>
-                    <p className="text-xl font-bold tracking-tight text-blue-400">$128,500</p>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                    <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Tasa de Mora</p>
-                    <p className="text-xl font-bold tracking-tight text-rose-500">3.2%</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                      <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Capital Activo</p>
+                      <p className="text-xl font-bold tracking-tight text-blue-400">$128,500</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                      <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Tasa de Mora</p>
+                      <p className="text-xl font-bold tracking-tight text-rose-500">3.2%</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

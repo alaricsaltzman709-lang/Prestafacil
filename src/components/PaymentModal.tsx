@@ -18,7 +18,7 @@ import { cn, formatCurrency, formatDate } from '../lib/utils';
 
 export default function PaymentModal({ loan, onClose, darkMode }: { loan: Loan, onClose: () => void, darkMode: boolean }) {
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [amount, setAmount] = useState(loan.monthlyInstallment.toString());
+  const [amount, setAmount] = useState(loan.installmentAmount?.toString() || '0');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -117,7 +117,7 @@ export default function PaymentModal({ loan, onClose, darkMode }: { loan: Loan, 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Cuota</p>
-                <p className="font-bold">{formatCurrency(loan.monthlyInstallment)}</p>
+                <p className="font-bold">{formatCurrency(loan.installmentAmount)}</p>
               </div>
               <div>
                 <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total</p>

@@ -60,7 +60,7 @@ export default function AdminSettings({ darkMode, onSettingsUpdate }: AdminSetti
     primaryFont: 'Inter',
     landingPage: DEFAULT_LANDING
   });
-  const [activeTab, setActiveTab] = useState<'app' | 'landing'>('app');
+  const [activeTab, setActiveTab] = useState<'app' | 'landing' | 'custom-nav'>('app');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -73,7 +73,8 @@ export default function AdminSettings({ darkMode, onSettingsUpdate }: AdminSetti
           const data = snap.data() as AppSettings;
           setSettings({
             ...data,
-            landingPage: data.landingPage || DEFAULT_LANDING
+            landingPage: data.landingPage || DEFAULT_LANDING,
+            customActions: data.customActions || []
           });
         }
       } catch (err) {
@@ -104,6 +105,34 @@ export default function AdminSettings({ darkMode, onSettingsUpdate }: AdminSetti
     }));
   };
 
+  const addCustomAction = () => {
+    const newAction = {
+      id: crypto.randomUUID(),
+      label: 'Nuevo Botón',
+      icon: 'Plus',
+      description: 'Describe qué debe hacer este botón...',
+      enabled: true
+    };
+    setSettings(prev => ({
+      ...prev,
+      customActions: [...(prev.customActions || []), newAction]
+    }));
+  };
+
+  const updateCustomAction = (id: string, updates: any) => {
+    setSettings(prev => ({
+      ...prev,
+      customActions: prev.customActions?.map(a => a.id === id ? { ...a, ...updates } : a)
+    }));
+  };
+
+  const removeCustomAction = (id: string) => {
+    setSettings(prev => ({
+      ...prev,
+      customActions: prev.customActions?.filter(a => a.id !== id)
+    }));
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center py-20">
       <Loader2 className="w-8 h-8 animate-spin text-rae-blue-500" />
@@ -128,6 +157,16 @@ export default function AdminSettings({ darkMode, onSettingsUpdate }: AdminSetti
           >
             <Settings2 className="w-4 h-4" />
             Sistema
+          </button>
+          <button
+            onClick={() => setActiveTab('custom-nav')}
+            className={cn(
+              "px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2",
+              activeTab === 'custom-nav' ? "bg-white dark:bg-white/10 shadow-sm text-rae-blue-500" : "text-gray-500"
+            )}
+          >
+            <Plus className="w-4 h-4" />
+            Botones Usuario
           </button>
           <button
             onClick={() => setActiveTab('landing')}
@@ -245,6 +284,77 @@ export default function AdminSettings({ darkMode, onSettingsUpdate }: AdminSetti
               </div>
             </div>
           </motion.div>
+        ) : activeTab === 'custom-nav' ? (
+          <motion.div
+            key="nav-tab"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-6"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-lg font-bold">Botones Personalizados</h4>
+                <p className="text-gray-500 text-sm">Añade opciones extras al panel lateral del usuario.</p>
+              </div>
+              <button
+                onClick={addCustomAction}
+                className="flex items-center gap-2 px-4 py-2 bg-rae-blue-600 text-white rounded-xl font-bold"
+              >
+                <Plus className="w-4 h-4" />
+                Nuevo Botón
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {settings.customActions?.map(action => (
+                <div key={action.id} className={cn(
+                  "p-6 rounded-3xl border space-y-4",
+                  darkMode ? "bg-black/20 border-white/5" : "bg-white border-gray-100 shadow-sm"
+                )}>
+                  <div className="flex items-center justify-between">
+                    <input 
+                      type="text"
+                      value={action.label}
+                      onChange={e => updateCustomAction(action.id, { label: e.target.value })}
+                      className="bg-transparent font-bold outline-none border-b border-white/10 focus:border-rae-blue-500"
+                      placeholder="Nombre del Botón"
+                    />
+                    <button onClick={() => removeCustomAction(action.id)} className="text-red-500">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <textarea 
+                    value={action.description}
+                    onChange={e => updateCustomAction(action.id, { description: e.target.value })}
+                    className="w-full bg-transparent text-sm text-gray-500 outline-none h-20"
+                    placeholder="Describe qué hace este botón. La app lo mostrará como información."
+                  />
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Ícono (Lucide Name)</label>
+                      <input 
+                        type="text"
+                        value={action.icon}
+                        onChange={e => updateCustomAction(action.id, { icon: e.target.value })}
+                        className="w-full bg-transparent text-xs border-b border-white/10 outline-none"
+                        placeholder="Plus, Settings, etc."
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <input 
+                        type="checkbox"
+                        checked={action.enabled}
+                        onChange={e => updateCustomAction(action.id, { enabled: e.target.checked })}
+                        className="w-4 h-4 rounded accent-rae-blue-500"
+                      />
+                      <label className="text-xs">Activo</label>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
         ) : (
           <motion.div
             key="landing-tab"
@@ -285,6 +395,19 @@ export default function AdminSettings({ darkMode, onSettingsUpdate }: AdminSetti
                         "w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-rae-blue-500 min-h-[100px]",
                         darkMode ? "bg-black/40 border-white/10" : "bg-gray-50 border-gray-200"
                       )}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold uppercase text-gray-500">URL Imagen Hero</label>
+                    <input 
+                      type="text"
+                      value={settings.landingPage?.heroImageUrl || ''}
+                      onChange={e => updateLanding({ heroImageUrl: e.target.value })}
+                      className={cn(
+                        "w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-rae-blue-500",
+                        darkMode ? "bg-black/40 border-white/10" : "bg-gray-50 border-gray-200"
+                      )}
+                      placeholder="https://images.unsplash.com/..."
                     />
                   </div>
                 </div>
@@ -435,27 +558,44 @@ export default function AdminSettings({ darkMode, onSettingsUpdate }: AdminSetti
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase text-gray-500">Título del Showcase</label>
-                  <textarea 
-                    value={settings.landingPage?.showcaseTitle}
-                    onChange={e => updateLanding({ showcaseTitle: e.target.value })}
-                    className={cn(
-                      "w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-rae-blue-500 min-h-[80px]",
-                      darkMode ? "bg-black/40 border-white/10" : "bg-gray-50 border-gray-200"
-                    )}
-                  />
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold uppercase text-gray-500">Título del Showcase</label>
+                    <textarea 
+                      value={settings.landingPage?.showcaseTitle}
+                      onChange={e => updateLanding({ showcaseTitle: e.target.value })}
+                      className={cn(
+                        "w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-rae-blue-500 min-h-[80px]",
+                        darkMode ? "bg-black/40 border-white/10" : "bg-gray-50 border-gray-200"
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold uppercase text-gray-500">Descripción del Showcase</label>
+                    <textarea 
+                      value={settings.landingPage?.showcaseDescription}
+                      onChange={e => updateLanding({ showcaseDescription: e.target.value })}
+                      className={cn(
+                        "w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-rae-blue-500 min-h-[80px]",
+                        darkMode ? "bg-black/40 border-white/10" : "bg-gray-50 border-gray-200"
+                      )}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase text-gray-500">Descripción del Showcase</label>
-                  <textarea 
-                    value={settings.landingPage?.showcaseDescription}
-                    onChange={e => updateLanding({ showcaseDescription: e.target.value })}
-                    className={cn(
-                      "w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-rae-blue-500 min-h-[80px]",
-                      darkMode ? "bg-black/40 border-white/10" : "bg-gray-50 border-gray-200"
-                    )}
-                  />
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold uppercase text-gray-500">URL Imagen Showcase</label>
+                    <input 
+                      type="text"
+                      value={settings.landingPage?.showcaseImageUrl || ''}
+                      onChange={e => updateLanding({ showcaseImageUrl: e.target.value })}
+                      className={cn(
+                        "w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-rae-blue-500",
+                        darkMode ? "bg-black/40 border-white/10" : "bg-gray-50 border-gray-200"
+                      )}
+                      placeholder="https://images.unsplash.com/..."
+                    />
+                  </div>
                 </div>
               </div>
             </div>

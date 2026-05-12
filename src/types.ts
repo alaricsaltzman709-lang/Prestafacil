@@ -5,6 +5,8 @@ export interface LandingPageSettings {
   heroShowDemo?: boolean;
   heroGradient?: string;
   backgroundColor?: string;
+  heroImageUrl?: string;
+  showcaseImageUrl?: string;
   features: Array<{
     title: string;
     description: string;
@@ -18,6 +20,14 @@ export interface LandingPageSettings {
   ctaButtonText: string;
 }
 
+export interface CustomAction {
+  id: string;
+  label: string;
+  icon: string;
+  description: string;
+  enabled: boolean;
+}
+
 export interface AppSettings {
   appName: string;
   logoUrl?: string;
@@ -25,6 +35,7 @@ export interface AppSettings {
   fontSize?: 'small' | 'medium' | 'large';
   primaryIconSet?: string;
   landingPage?: LandingPageSettings;
+  customActions?: CustomAction[];
 }
 
 export interface UserProfile {
@@ -51,18 +62,22 @@ export interface Customer {
   createdAt: any;
 }
 
+export type PaymentFrequency = 'weekly' | 'biweekly' | 'monthly';
+
 export interface Loan {
   id: string;
   userId: string;
   customerId?: string;
   borrowerName: string;
   amount: number;
-  interestRate: number; // monthly interest rate (percentage)
-  termMonths: number;
+  interestRate: number; // interest rate (percentage)
+  termMonths: number; // can be replaced by total installments in logic
+  installments: number;
+  paymentFrequency: PaymentFrequency;
   startDate: string;
   status: 'active' | 'paid' | 'defaulted';
   totalPayable: number;
-  monthlyInstallment: number;
+  installmentAmount: number;
   remainingBalance: number;
   createdAt: string;
 }

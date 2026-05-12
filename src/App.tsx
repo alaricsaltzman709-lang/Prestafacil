@@ -42,10 +42,34 @@ import {
   Upload,
   FileText,
   Briefcase,
-  X
+  X,
+  Info,
+  ExternalLink,
+  MessageCircle,
+  HelpCircle,
+  Mail,
+  Bell,
+  Heart,
+  Star,
+  Zap,
+  Target,
+  Globe,
+  Smartphone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loan, DashboardStats, UserProfile, Customer } from './types';
+import { Loan, DashboardStats, UserProfile, Customer, AppSettings } from './types';
+
+function DynamicIcon({ name, className }: { name: string; className?: string }) {
+  const icons: Record<string, any> = {
+    LayoutDashboard, HandCoins, Users, Settings, LogOut, LogIn, TrendingUp, CreditCard,
+    Plus, Moon, Sun, Cloud, CloudOff, Download, Upload, FileText, Briefcase, X,
+    Info, ExternalLink, MessageCircle, HelpCircle, Mail, Smartphone, Globe, Bell, Heart, Star, Zap, Target,
+    LayoutList, BarChart3, ShieldCheck, Lock, Database, Sliders
+  };
+  const Icon = icons[name] || HelpCircle;
+  return <Icon className={className} />;
+}
+
 import { supabase, isSupabaseEnabled } from './lib/supabase';
 import { cn, formatCurrency } from './lib/utils';
 import { exportToExcel } from './lib/export';
@@ -71,7 +95,6 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { updatePassword } from 'firebase/auth';
-import { AppSettings } from './types';
 
 function RAELogo({ className, settings }: { className?: string, settings?: AppSettings }) {
   if (settings?.logoUrl) {
@@ -114,6 +137,7 @@ export default function App() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [showAuth, setShowAuth] = useState(false);
+  const [selectedCustomAction, setSelectedCustomAction] = useState<{label: string, description: string} | null>(null);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -730,6 +754,19 @@ export default function App() {
               label="Mora"
               darkMode={darkMode}
             />
+
+            {/* Custom User Actions */}
+            {appSettings.customActions?.filter(a => a.enabled).map((action, idx) => (
+              <NavItem 
+                key={idx}
+                active={false}
+                onClick={() => setSelectedCustomAction({ label: action.label, description: action.description })}
+                icon={<DynamicIcon name={action.icon} className="w-5 h-5" />}
+                label={action.label}
+                darkMode={darkMode}
+              />
+            ))}
+
             {profile?.role === 'admin' && (
               <NavItem 
                 active={activeTab === 'admin'} 
@@ -1026,6 +1063,48 @@ export default function App() {
             </motion.div>
           </div>
         )}
+
+        {selectedCustomAction && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedCustomAction(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={cn(
+                "relative w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl border",
+                darkMode ? "bg-[#111111] border-white/10" : "bg-white border-gray-100"
+              )}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">{selectedCustomAction.label}</h3>
+                <button onClick={() => setSelectedCustomAction(null)} className="p-2 hover:bg-gray-500/10 rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 rounded-3xl bg-rae-blue-500/5 border border-rae-blue-500/10 mb-6">
+                <Info className="w-8 h-8 text-rae-blue-500 mb-4" />
+                <p className={cn("text-lg leading-relaxed", darkMode ? "text-gray-300" : "text-gray-600")}>
+                  {selectedCustomAction.description}
+                </p>
+              </div>
+
+              <button 
+                onClick={() => setSelectedCustomAction(null)}
+                className="w-full py-4 bg-rae-blue-600 hover:bg-rae-blue-700 text-white rounded-2xl font-bold transition-all shadow-lg active:scale-95"
+              >
+                Entendido
+              </button>
+            </motion.div>
+          </div>
+        )}
         {showLoanForm && (
           <LoanForm 
             onClose={() => setShowLoanForm(false)} 
@@ -1038,7 +1117,7 @@ export default function App() {
   );
 }
 
-function NavItem({ active, onClick, icon, label, darkMode }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string, darkMode: boolean }) {
+function NavItem({ active, onClick, icon, label, darkMode }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string, darkMode: boolean, key?: React.Key }) {
   return (
     <button
       onClick={onClick}

@@ -1,18 +1,32 @@
+import { PaymentFrequency } from '../types';
+
 /**
- * Calculates monthly installment using French Amortization system
- * Monthly Payment (A) = P * [r(1+r)^n] / [(1+r)^n - 1]
+ * Calculates installment using French Amortization system based on frequency
  */
-export function calculateMonthlyInstallment(principal: number, annualRate: number, termMonths: number): number {
-  const r = (annualRate / 100) / 12;
-  if (r === 0) return principal / termMonths;
-  const n = termMonths;
+export function calculateInstallment(principal: number, annualRate: number, installments: number, frequency: PaymentFrequency): number {
+  let periodRate: number;
   
-  const installment = principal * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+  switch(frequency) {
+    case 'weekly':
+      periodRate = (annualRate / 100) / 52;
+      break;
+    case 'biweekly':
+      periodRate = (annualRate / 100) / 26;
+      break;
+    case 'monthly':
+    default:
+      periodRate = (annualRate / 100) / 12;
+      break;
+  }
+
+  if (periodRate === 0) return principal / installments;
+  
+  const installment = principal * (periodRate * Math.pow(1 + periodRate, installments)) / (Math.pow(1 + periodRate, installments) - 1);
   return Number(installment.toFixed(2));
 }
 
-export function calculateTotalPayable(installment: number, termMonths: number): number {
-  return Number((installment * termMonths).toFixed(2));
+export function calculateTotalPayable(installment: number, installments: number): number {
+  return Number((installment * installments).toFixed(2));
 }
 
 export function calculateProjectedInterest(totalPayable: number, principal: number): number {
